@@ -777,6 +777,33 @@ class IndiClientLibCameraImx519(IndiClientLibCameraGeneric):
             4 : '--mode 1280:720:10',  # cropped
         }
 
+class IndiClientLibCameraImx585(IndiClientLibCameraGeneric):
+    # this model is almost identical to the imx477
+
+    def __init__(self, *args, **kwargs):
+        super(IndiClientLibCameraImx585, self).__init__(*args, **kwargs)
+
+        self.ccd_device_name = 'libcamera_imx585'
+
+        self.camera_info = {
+            'width'         : 3840,
+            'height'        : 2160,
+            'pixel'         : 2.9,
+            'min_gain'      : 1,
+            'max_gain'      : 100,  # verified
+            'min_exposure'  : 0.0001,
+            'max_exposure'  : 200.0,
+            'cfa'           : 'GRBG',
+            'bit_depth'     : 12,
+        }
+
+        self._binmode_options = {
+            #1 : '--mode 4656:3496:10',
+            1 : '',
+            2 : '--mode 1920:1080:12',  # 2x2 binning (or closest available resolution)
+            3 : '--mode 960:540:12',    # 4x4 binning (or closest available resolution)
+        }
+
 
 class IndiClientLibCamera64mpHawkeye(IndiClientLibCameraGeneric):
 
