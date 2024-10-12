@@ -495,12 +495,36 @@ class IndiAllSkyConfigBase(object):
             "SI1145_VIS_GAIN_DAY"    : "GAIN_ADC_CLOCK_DIV_1",
             "SI1145_IR_GAIN_NIGHT"   : "GAIN_ADC_CLOCK_DIV_32",
             "SI1145_IR_GAIN_DAY"     : "GAIN_ADC_CLOCK_DIV_1",
+            "LTR390_GAIN_NIGHT"      : "GAIN_9X",
+            "LTR390_GAIN_DAY"        : "GAIN_1X",
         },
         "CHARTS" : {
             "CUSTOM_SLOT_1"          : 10,
             "CUSTOM_SLOT_2"          : 11,
             "CUSTOM_SLOT_3"          : 12,
             "CUSTOM_SLOT_4"          : 13,
+        },
+        "ADSB" : {
+            "ENABLE"                 : False,
+            "DUMP1090_URL"           : 'https://localhost/dump1090/data/aircraft.json',
+            "CERT_BYPASS"            : True,
+            "USERNAME"               : "",
+            "PASSWORD"               : "",
+            "PASSWORD_E"             : "",
+            "ALT_DEG_MIN"            : 20.0,
+            "LABEL_ENABLE"           : True,
+            "LABEL_LIMIT"            : 10,
+            "AIRCRAFT_LABEL_TEMPLATE"      : "{id:s} {distance:0.1f}km {alt:0.1f}\u00b0 {dir:s}",
+            "IMAGE_LABEL_TEMPLATE_PREFIX"  : "# xy:-15,200 (Right)\n# anchor:ra (Right Justified)\n# color:200,200,200\nAircraft",
+        },
+        "SATELLITE_TRACK" : {
+            "ENABLE"                 : False,
+            "DAYTIME_TRACK"          : False,
+            "ALT_DEG_MIN"            : 20.0,
+            "LABEL_ENABLE"           : True,
+            "LABEL_LIMIT"            : 10,
+            "SAT_LABEL_TEMPLATE"     : "{title:s} {alt:0.1f}\u00b0 {dir:s}",
+            "IMAGE_LABEL_TEMPLATE_PREFIX" : "# xy:15,300 (Left)\n# anchor:la (Left Justified)\n# color:200,200,200\nSatellites",
         },
     })
 
@@ -664,6 +688,14 @@ class IndiAllSkyConfig(IndiAllSkyConfigBase):
             else:
                 temp_sensor__mqtt_password = config.get('TEMP_SENSOR', {}).get('MQTT_PASSWORD', '')
 
+
+            adsb__password_e = config.get('ADSB', {}).get('PASSWORD_E', '')
+            if adsb__password_e:
+                # not catching InvalidToken
+                adsb__password = f_key.decrypt(adsb__password_e.encode()).decode()
+            else:
+                adsb__password = config.get('ADSB', {}).get('PASSWORD', '')
+
         else:
             # passwords should not be encrypted
             filetransfer__password = config.get('FILETRANSFER', {}).get('PASSWORD', '')
@@ -674,6 +706,7 @@ class IndiAllSkyConfig(IndiAllSkyConfigBase):
             temp_sensor__openweathermap_apikey = config.get('TEMP_SENSOR', {}).get('OPENWEATHERMAP_APIKEY', '')
             temp_sensor__wunderground_apikey = config.get('TEMP_SENSOR', {}).get('WUNDERGROUND_APIKEY', '')
             temp_sensor__mqtt_password = config.get('TEMP_SENSOR', {}).get('MQTT_PASSWORD', '')
+            adsb__password = config.get('ADSB', {}).get('PASSWORD', '')
 
 
         config['FILETRANSFER']['PASSWORD'] = filetransfer__password
@@ -692,6 +725,8 @@ class IndiAllSkyConfig(IndiAllSkyConfigBase):
         config['TEMP_SENSOR']['WUNDERGROUND_APIKEY_E'] = ''
         config['TEMP_SENSOR']['MQTT_PASSWORD'] = temp_sensor__mqtt_password
         config['TEMP_SENSOR']['MQTT_PASSWORD_E'] = ''
+        config['ADSB']['PASSWORD'] = adsb__password
+        config['ADSB']['PASSWORD_E'] = ''
 
         return config
 
@@ -790,6 +825,15 @@ class IndiAllSkyConfig(IndiAllSkyConfigBase):
                 temp_sensor__mqtt_password_e = ''
                 temp_sensor__mqtt_password = ''
 
+
+            adsb__password = str(config['ADSB']['PASSWORD'])
+            if adsb__password:
+                adsb__password_e = f_key.encrypt(adsb__password.encode()).decode()
+                adsb__password = ''
+            else:
+                adsb__password_e = ''
+                adsb__password = ''
+
         else:
             # passwords should not be encrypted
             encrypted = False
@@ -810,6 +854,8 @@ class IndiAllSkyConfig(IndiAllSkyConfigBase):
             temp_sensor__wunderground_apikey_e = ''
             temp_sensor__mqtt_password = str(config['TEMP_SENSOR']['MQTT_PASSWORD'])
             temp_sensor__mqtt_password_e = ''
+            adsb__password = str(config['ADSB']['PASSWORD'])
+            adsb__password_e = ''
 
 
         config['FILETRANSFER']['PASSWORD'] = filetransfer__password
@@ -828,6 +874,8 @@ class IndiAllSkyConfig(IndiAllSkyConfigBase):
         config['TEMP_SENSOR']['WUNDERGROUND_APIKEY_E'] = temp_sensor__wunderground_apikey_e
         config['TEMP_SENSOR']['MQTT_PASSWORD'] = temp_sensor__mqtt_password
         config['TEMP_SENSOR']['MQTT_PASSWORD_E'] = temp_sensor__mqtt_password_e
+        config['ADSB']['PASSWORD'] = adsb__password
+        config['ADSB']['PASSWORD_E'] = adsb__password_e
 
 
         return config, encrypted

@@ -6,6 +6,9 @@ indi-allsky is software used to manage a Linux-based All Sky Camera using the IN
 
 
 ## New Features
+* Satellite Tracking
+* ADS-B Aircraft Tracking
+    * Use a SDR to tag aircraft that appear in your camrea
 * Mini-Timelapses
     * Create videos of specific events captured with your camera
 * Weather API
@@ -36,6 +39,7 @@ indi-allsky is software used to manage a Linux-based All Sky Camera using the IN
     * VEML7700
     * BH1750
     * SI1145
+    * LTR390
 * Generic GPIO controls
 * MQTT Broker sensors
     * Subscribe to topics as sensor input
@@ -151,7 +155,8 @@ https://github.com/aaronwmorris/indi-allsky/wiki/FAQ
 ## INDI support
 | Version         | Note |
 | --------------- | ---- |
-| v2.0.9          | **Recommended** |
+| v2.1.0          | **Recommended** |
+| v2.0.9          |      |
 | v2.0.8          | Minimum for Ubuntu 24.04 (pyindi-client) |
 | v2.0.7          | Minimum for ASI676MC |
 | v2.0.6          |      |

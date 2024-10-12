@@ -1634,6 +1634,21 @@ def PYCURL_CAMERA__USERNAME_validator(form, field):
         raise ValidationError('Invalid username')
 
 
+def ADSB__USERNAME_validator(form, field):
+    if not field.data:
+        return
+
+    username_regex = r'^[a-zA-Z0-9_\@\.\-]+$'
+
+    if not re.search(username_regex, field.data):
+        raise ValidationError('Invalid username')
+
+
+def ADSB__DUMP1090_URL_validator(form, field):
+    if not field.data:
+        return
+
+
 def FILETRANSFER__PASSWORD_validator(form, field):
     pass
 
@@ -1647,6 +1662,10 @@ def SYNCAPI__APIKEY_validator(form, field):
 
 
 def PYCURL_CAMERA__PASSWORD_validator(form, field):
+    pass
+
+
+def ADSB__PASSWORD_validator(form, field):
     pass
 
 
@@ -2387,6 +2406,11 @@ def TEMP_SENSOR__SI1145_GAIN_validator(form, field):
         raise ValidationError('Invalid gain selection')
 
 
+def TEMP_SENSOR__LTR390_GAIN_validator(form, field):
+    if field.data not in list(zip(*form.TEMP_SENSOR__LTR390_GAIN_choices))[0]:
+        raise ValidationError('Invalid gain selection')
+
+
 def HEALTHCHECK__DISK_USAGE_validator(form, field):
     if not isinstance(field.data, (int, float)):
         raise ValidationError('Please enter a valid number')
@@ -2409,6 +2433,111 @@ def HEALTHCHECK__SWAP_USAGE_validator(form, field):
 
     if field.data > 101:
         raise ValidationError('Percentage must be 101 or less')
+
+
+def ADSB__ALT_DEG_MIN_validator(form, field):
+    if not isinstance(field.data, (int, float)):
+        raise ValidationError('Please enter valid number')
+
+    if field.data < 5:
+        raise ValidationError('Minimum altitude must be greater than 5')
+
+    if field.data > 90:
+        raise ValidationError('Minimum altitude must be less than 90')
+
+
+def ADSB__IMAGE_LABEL_TEMPLATE_PREFIX_validator(form, field):
+    pass
+
+
+def ADSB__AIRCRAFT_LABEL_TEMPLATE_validator(form, field):
+    test_data = {
+        'id'        : '',
+        'squawk'    : '',
+        'flight'    : '',
+        'hex'       : '',
+        'latitude'  : 0.0,
+        'longitude' : 0.0,
+        'distance'  : 0.0,
+        'range'     : 0.0,
+        'elevation' : 0.0,
+        'altitude'  : 0.0,
+        'alt'       : 0.0,
+        'az'        : 0.0,
+        'dir'       : '',
+    }
+
+
+    try:
+        field.data.format(**test_data)
+    except KeyError as e:
+        raise ValidationError('KeyError: {0:s}'.format(str(e)))
+    except ValueError as e:
+        raise ValidationError('ValueError: {0:s}'.format(str(e)))
+
+
+def ADSB__LABEL_LIMIT_validator(form, field):
+    if not isinstance(field.data, int):
+        raise ValidationError('Please enter a valid number')
+
+
+    if field.data < 1:
+        raise ValidationError('Limit must be greater than 0')
+
+    if field.data > 20:
+        raise ValidationError('Limit must be 20 or less')
+
+
+def SATELLITE_TRACK__ALT_DEG_MIN_validator(form, field):
+    if not isinstance(field.data, (int, float)):
+        raise ValidationError('Please enter valid number')
+
+    if field.data < 0:
+        raise ValidationError('Minimum altitude must be 0 or more')
+
+    if field.data > 90:
+        raise ValidationError('Minimum altitude must be less than 90')
+
+
+def SATELLITE_TRACK__IMAGE_LABEL_TEMPLATE_PREFIX_validator(form, field):
+    pass
+
+
+def SATELLITE_TRACK__SAT_LABEL_TEMPLATE_validator(form, field):
+    test_data = {
+        'title'     : '',
+        'elevation' : 0.0,
+        'alt'       : 0.0,
+        'az'        : 0.0,
+        'dir'       : '',
+        'mag'       : 0.0,
+        'sublat'    : 0.0,
+        'latitude'  : 0.0,
+        'sublong'   : 0.0,
+        'longitude' : 0.0,
+        'range'     : 0.0,
+        'range_velocity' : 0.0,
+    }
+
+
+    try:
+        field.data.format(**test_data)
+    except KeyError as e:
+        raise ValidationError('KeyError: {0:s}'.format(str(e)))
+    except ValueError as e:
+        raise ValidationError('ValueError: {0:s}'.format(str(e)))
+
+
+def SATELLITE_TRACK__LABEL_LIMIT_validator(form, field):
+    if not isinstance(field.data, int):
+        raise ValidationError('Please enter a valid number')
+
+
+    if field.data < 1:
+        raise ValidationError('Limit must be greater than 0')
+
+    if field.data > 20:
+        raise ValidationError('Limit must be 20 or less')
 
 
 def INDI_CONFIG_DEFAULTS_validator(form, field):
@@ -2772,6 +2901,7 @@ class IndiAllskyConfigForm(FlaskForm):
         ('blinka_light_sensor_veml7700_i2c', 'VEML7700 i2c - Lux/Light/White (3)'),
         ('blinka_light_sensor_bh1750_i2c', 'BH1750 i2c - Lux (1)'),
         ('blinka_light_sensor_si1145_i2c', 'SI1145 i2c - Vis/IR/UV (3)'),
+        ('blinka_light_sensor_ltr390_i2c', 'LTR390 i2c - UV/Vis/UVI/Lux (4)'),
         ('mqtt_broker_sensor', 'MQTT Broker Sensor - (5)'),
         ('sensor_data_generator', 'Test Data Generator - (4)'),
     )
@@ -2913,6 +3043,13 @@ class IndiAllskyConfigForm(FlaskForm):
         ('GAIN_ADC_CLOCK_DIV_128', '[7] - 128x'),
     )
 
+    TEMP_SENSOR__LTR390_GAIN_choices = (
+        ('GAIN_1X', '[0] - 1x (default)'),
+        ('GAIN_3X', '[1] - 3x'),
+        ('GAIN_6X', '[2] - 6x'),
+        ('GAIN_9X', '[3] - 9x'),
+        ('GAIN_18X', '[4] - 18x'),
+    )
 
 
     ENCRYPT_PASSWORDS                = BooleanField('Encrypt Passwords')
@@ -3322,10 +3459,29 @@ class IndiAllskyConfigForm(FlaskForm):
     TEMP_SENSOR__SI1145_VIS_GAIN_DAY   = SelectField('SI1145 Visible Gain (Day)', choices=TEMP_SENSOR__SI1145_GAIN_choices, validators=[TEMP_SENSOR__SI1145_GAIN_validator])
     TEMP_SENSOR__SI1145_IR_GAIN_NIGHT  = SelectField('SI1145 IR Gain (Night)', choices=TEMP_SENSOR__SI1145_GAIN_choices, validators=[TEMP_SENSOR__SI1145_GAIN_validator])
     TEMP_SENSOR__SI1145_IR_GAIN_DAY    = SelectField('SI1145 IR Gain (Day)', choices=TEMP_SENSOR__SI1145_GAIN_choices, validators=[TEMP_SENSOR__SI1145_GAIN_validator])
+    TEMP_SENSOR__LTR390_GAIN_NIGHT     = SelectField('LTR390 Gain (Night)', choices=TEMP_SENSOR__LTR390_GAIN_choices, validators=[TEMP_SENSOR__LTR390_GAIN_validator])
+    TEMP_SENSOR__LTR390_GAIN_DAY       = SelectField('LTR390 Gain (Day)', choices=TEMP_SENSOR__LTR390_GAIN_choices, validators=[TEMP_SENSOR__LTR390_GAIN_validator])
     CHARTS__CUSTOM_SLOT_1            = SelectField('Extra Chart Slot 1', choices=[], validators=[SENSOR_SLOT_validator])
     CHARTS__CUSTOM_SLOT_2            = SelectField('Extra Chart Slot 2', choices=[], validators=[SENSOR_SLOT_validator])
     CHARTS__CUSTOM_SLOT_3            = SelectField('Extra Chart Slot 3', choices=[], validators=[SENSOR_SLOT_validator])
     CHARTS__CUSTOM_SLOT_4            = SelectField('Extra Chart Slot 4', choices=[], validators=[SENSOR_SLOT_validator])
+    ADSB__ENABLE                     = BooleanField('Enable ADS-B Tracking')
+    ADSB__DUMP1090_URL               = StringField('Dump1090 URL', validators=[ADSB__DUMP1090_URL_validator])
+    ADSB__USERNAME                   = StringField('Username', validators=[ADSB__USERNAME_validator], render_kw={'autocomplete' : 'new-password'})
+    ADSB__PASSWORD                   = PasswordField('Password', widget=PasswordInput(hide_value=False), validators=[ADSB__PASSWORD_validator], render_kw={'autocomplete' : 'new-password'})
+    ADSB__CERT_BYPASS                = BooleanField('Disable Certificate Validation')
+    ADSB__ALT_DEG_MIN                = FloatField('Minimum Altitude (Degrees)', validators=[DataRequired(), ADSB__ALT_DEG_MIN_validator])
+    ADSB__LABEL_ENABLE               = BooleanField('Enable Image Label')
+    ADSB__LABEL_LIMIT                = IntegerField('Label Limit', validators=[DataRequired(), ADSB__LABEL_LIMIT_validator])
+    ADSB__AIRCRAFT_LABEL_TEMPLATE    = StringField('Aircraft Label Template', validators=[DataRequired(), ADSB__AIRCRAFT_LABEL_TEMPLATE_validator])
+    ADSB__IMAGE_LABEL_TEMPLATE_PREFIX   = TextAreaField('Image Template Prefix', validators=[DataRequired(), ADSB__IMAGE_LABEL_TEMPLATE_PREFIX_validator])
+    SATELLITE_TRACK__ENABLE          = BooleanField('Enable Satellite Tracking')
+    SATELLITE_TRACK__DAYTIME_TRACK   = BooleanField('Daytime Tracking')
+    SATELLITE_TRACK__ALT_DEG_MIN     = FloatField('Minimum Altitude (Degrees)', validators=[DataRequired(), SATELLITE_TRACK__ALT_DEG_MIN_validator])
+    SATELLITE_TRACK__LABEL_ENABLE    = BooleanField('Enable Image Label')
+    SATELLITE_TRACK__LABEL_LIMIT     = IntegerField('Label Limit', validators=[DataRequired(), SATELLITE_TRACK__LABEL_LIMIT_validator])
+    SATELLITE_TRACK__SAT_LABEL_TEMPLATE = StringField('Satellite Label Template', validators=[DataRequired(), SATELLITE_TRACK__SAT_LABEL_TEMPLATE_validator])
+    SATELLITE_TRACK__IMAGE_LABEL_TEMPLATE_PREFIX = TextAreaField('Image Template Prefix', validators=[DataRequired(), SATELLITE_TRACK__IMAGE_LABEL_TEMPLATE_PREFIX_validator])
     INDI_CONFIG_DEFAULTS             = TextAreaField('INDI Camera Config (Default)', validators=[DataRequired(), INDI_CONFIG_DEFAULTS_validator])
     INDI_CONFIG_DAY                  = TextAreaField('INDI Camera Config (Day)', validators=[DataRequired(), INDI_CONFIG_DAY_validator])
 

@@ -207,7 +207,7 @@ if [[ -f "/etc/astroberry.version" ]]; then
 fi
 
 
-if systemctl --user -q is-active "${ALLSKY_SERVICE_NAME}" >/dev/null 2>&1; then
+if systemctl --user -q is-active "${ALLSKY_SERVICE_NAME}.service" >/dev/null 2>&1; then
     echo
     echo
     echo "ERROR: indi-allsky is running.  Please stop the service before running this script."
@@ -1855,6 +1855,7 @@ pip3 install -r "${ALLSKY_DIRECTORY}/${VIRTUALENV_REQ_POST}"
 
 # pyindi-client setup
 SUPPORTED_INDI_VERSIONS=(
+    "2.1.0"
     "2.0.9"
     "2.0.8"
     "2.0.7"
@@ -1909,7 +1910,9 @@ done
 
 
 
-if [ "$INDI_VERSION" == "2.0.9" ]; then
+if [ "$INDI_VERSION" == "2.1.0" ]; then
+    pip3 install "$PYINDI_2_0_4"
+elif [ "$INDI_VERSION" == "2.0.9" ]; then
     pip3 install "$PYINDI_2_0_4"
 elif [ "$INDI_VERSION" == "2.0.8" ]; then
     pip3 install "$PYINDI_2_0_4"
@@ -1953,14 +1956,16 @@ cd "$OLDPWD" || catch_error
 #echo ${INDI_CCD_DRIVERS[@]}
 
 
-if [[ "$CAMERA_INTERFACE" == "indi" && "$INSTALL_INDISERVER" == "true" ]]; then
-    while [ -z "${CCD_DRIVER:-}" ]; do
-        # shellcheck disable=SC2068
-        CCD_DRIVER=$(whiptail --title "Camera Driver" --nocancel --notags --radiolist "Press space to select" 0 0 0 ${INDI_CCD_DRIVERS[@]} 3>&1 1>&2 2>&3)
-    done
-else
-    # simulator will not affect anything
-    CCD_DRIVER=indi_simulator_ccd
+if [[ "$INSTALL_INDISERVER" == "true" ]]; then
+    if [[ "$CAMERA_INTERFACE" == "indi" || "$CAMERA_INTERFACE" == "indi_accumulator" ]]; then
+        while [ -z "${CCD_DRIVER:-}" ]; do
+            # shellcheck disable=SC2068
+            CCD_DRIVER=$(whiptail --title "Camera Driver" --nocancel --notags --radiolist "Press space to select" 0 0 0 ${INDI_CCD_DRIVERS[@]} 3>&1 1>&2 2>&3)
+        done
+    else
+        # simulator will not affect anything
+        CCD_DRIVER=indi_simulator_ccd
+    fi
 fi
 
 #echo $CCD_DRIVER
@@ -2072,15 +2077,10 @@ systemctl --user daemon-reload
 
 # indi-allsky service is started by the timer (2 minutes after boot)
 systemctl --user disable ${ALLSKY_SERVICE_NAME}.service
-systemctl --user enable ${ALLSKY_SERVICE_NAME}.timer
 
 # gunicorn service is started by the socket
 systemctl --user disable ${GUNICORN_SERVICE_NAME}.service
 systemctl --user enable ${GUNICORN_SERVICE_NAME}.socket
-
-if [ "$INSTALL_INDISERVER" == "true" ]; then
-    systemctl --user enable ${INDISERVER_SERVICE_NAME}.service
-fi
 
 
 echo "**** Setup policy kit permissions ****"
@@ -2510,12 +2510,12 @@ if [[ "$ASTROBERRY" == "true" ]]; then
     sudo systemctl restart nginx
 
 else
-    if systemctl -q is-active nginx; then
+    if systemctl -q is-active nginx.service; then
         echo "!!! WARNING - nginx is active - This might interfere with apache !!!"
         sleep 3
     fi
 
-    if systemctl -q is-active lighttpd; then
+    if systemctl -q is-active lighttpd.service; then
         echo "!!! WARNING - lighttpd is active - This might interfere with apache !!!"
         sleep 3
     fi
@@ -2779,6 +2779,66 @@ fi
 [[ -f "$TMP_CONFIG_DUMP" ]] && rm -f "$TMP_CONFIG_DUMP"
 
 
+if [ "$INSTALL_INDISERVER" == "true" ]; then
+    systemctl --user enable ${INDISERVER_SERVICE_NAME}.service
+
+
+    while [ -z "${RESTART_INDISERVER:-}" ]; do
+        if whiptail --title "Restart indiserver" --yesno "Do you want to restart the indiserver now?\n\nNot recommended if the indi-allsky service is active." 0 0 --defaultno; then
+            RESTART_INDISERVER="true"
+        else
+            RESTART_INDISERVER="false"
+        fi
+    done
+
+
+    if [ "$RESTART_INDISERVER" == "true" ]; then
+        echo "Restarting indiserver..."
+        sleep 3
+        systemctl --user restart ${INDISERVER_SERVICE_NAME}.service
+    fi
+fi
+
+
+while [ -z "${INDIALLSKY_AUTOSTART:-}" ]; do
+    if whiptail --title "Auto-start indi-allsky" --yesno "Do you want to start indi-allsky automatically at boot?" 0 0; then
+        INDIALLSKY_AUTOSTART="true"
+    else
+        INDIALLSKY_AUTOSTART="false"
+    fi
+done
+
+
+if [ "$INDIALLSKY_AUTOSTART" == "true" ]; then
+    systemctl --user enable ${ALLSKY_SERVICE_NAME}.timer
+else
+    systemctl --user disable ${ALLSKY_SERVICE_NAME}.timer
+fi
+
+
+
+if systemctl --user -q is-active "${ALLSKY_SERVICE_NAME}.service" >/dev/null 2>&1; then
+    # no need to start if already running
+    INDIALLSKY_START="false"
+fi
+
+
+while [ -z "${INDIALLSKY_START:-}" ]; do
+    if whiptail --title "Start indi-allsky" --yesno "Do you want to start indi-allsky service now?" 0 0 --defaultno; then
+        INDIALLSKY_START="true"
+    else
+        INDIALLSKY_START="false"
+    fi
+done
+
+
+if [ "$INDIALLSKY_START" == "true" ]; then
+    echo "Starting indi-allsky..."
+    sleep 3
+    systemctl --user start ${ALLSKY_SERVICE_NAME}.service
+fi
+
+
 # ensure indiserver is running
 systemctl --user start ${INDISERVER_SERVICE_NAME}.service
 
@@ -2790,13 +2850,15 @@ echo
 echo
 echo
 echo
-echo "*** Configurations are now stored in the database and *NOT* /etc/indi-allsky/config.json ***"
-echo
-echo "Services can be started at the command line or can be started from the web interface"
-echo
-echo "    systemctl --user start indi-allsky"
-echo
-echo
+
+if [ ! "$INDIALLSKY_START" == "true" ]; then
+    echo "Services may be started at the command line or can be started from the web interface"
+    echo
+    echo "    systemctl --user start indi-allsky"
+    echo
+    echo
+fi
+
 echo "The web interface may be accessed with the following URL"
 echo " (You may have to manually access by IP)"
 echo

@@ -143,14 +143,16 @@ cd "$OLDPWD" || catch_error
 #echo ${INDI_CCD_DRIVERS[@]}
 
 
-if [[ "$CAMERA_INTERFACE" == "indi" && "$INSTALL_INDISERVER" == "true" ]]; then
-    while [ -z "${CCD_DRIVER:-}" ]; do
-        # shellcheck disable=SC2068
-        CCD_DRIVER=$(whiptail --title "Camera Driver" --nocancel --notags --radiolist "Press space to select" 0 0 0 ${INDI_CCD_DRIVERS[@]} 3>&1 1>&2 2>&3)
-    done
-else
-    # simulator will not affect anything
-    CCD_DRIVER=indi_simulator_ccd
+if [[ "$INSTALL_INDISERVER" == "true" ]]; then
+    if [[ "$CAMERA_INTERFACE" == "indi" || "$CAMERA_INTERFACE" == "indi_accumulator" ]]; then
+        while [ -z "${CCD_DRIVER:-}" ]; do
+            # shellcheck disable=SC2068
+            CCD_DRIVER=$(whiptail --title "Camera Driver" --nocancel --notags --radiolist "Press space to select" 0 0 0 ${INDI_CCD_DRIVERS[@]} 3>&1 1>&2 2>&3)
+        done
+    else
+        # simulator will not affect anything
+        CCD_DRIVER=indi_simulator_ccd
+    fi
 fi
 
 #echo $CCD_DRIVER
@@ -214,14 +216,30 @@ fi
 if [ "$INSTALL_INDISERVER" == "true" ]; then
     systemctl --user enable ${INDISERVER_SERVICE_NAME}.service
 
-    echo
-    echo
-    echo
-    echo
-    echo "You now need to restart the indiserver service to activate the driver change"
-    echo
-    echo "    systemctl --user restart indiserver"
-    echo
+
+    while [ -z "${RESTART_INDISERVER:-}" ]; do
+        if whiptail --title "Restart indiserver" --yesno "Do you want to restart the indiserver now?\n\nNot recommended if the indi-allsky service is active." 0 0 --defaultno; then
+            RESTART_INDISERVER="true"
+        else
+            RESTART_INDISERVER="false"
+        fi
+    done
+
+
+    if [ "$RESTART_INDISERVER" == "true" ]; then
+        echo "Restarting indiserver..."
+        sleep 3
+        systemctl --user restart ${INDISERVER_SERVICE_NAME}.service
+    else
+        echo
+        echo
+        echo
+        echo
+        echo "You now need to restart the indiserver service to activate the driver change"
+        echo
+        echo "    systemctl --user restart $INDISERVER_SERVICE_NAME"
+        echo
+    fi
 fi
 
 END_TIME=$(date +%s)
