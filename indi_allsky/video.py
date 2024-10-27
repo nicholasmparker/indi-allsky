@@ -1679,8 +1679,10 @@ class VideoWorker(Process):
         task.setRunning()
 
 
+        now = datetime.now()
+
         # Old image files need to be pruned
-        cutoff_age_images = datetime.now() - timedelta(days=self.config['IMAGE_EXPIRE_DAYS'])
+        cutoff_age_images = now - timedelta(days=self.config.get('IMAGE_EXPIRE_DAYS', 10))
         cutoff_age_images_date = cutoff_age_images.date()  # cutoff date based on dayDate attribute, not createDate
 
         old_images = IndiAllSkyDbImageTable.query\
@@ -1688,24 +1690,36 @@ class VideoWorker(Process):
             .filter(IndiAllSkyDbCameraTable.id == camera.id)\
             .filter(IndiAllSkyDbImageTable.dayDate < cutoff_age_images_date)\
             .order_by(IndiAllSkyDbImageTable.createDate.asc())
-        old_fits_images = IndiAllSkyDbFitsImageTable.query\
-            .join(IndiAllSkyDbFitsImageTable.camera)\
-            .filter(IndiAllSkyDbCameraTable.id == camera.id)\
-            .filter(IndiAllSkyDbFitsImageTable.dayDate < cutoff_age_images_date)\
-            .order_by(IndiAllSkyDbFitsImageTable.createDate.asc())
-        old_raw_images = IndiAllSkyDbRawImageTable.query\
-            .join(IndiAllSkyDbRawImageTable.camera)\
-            .filter(IndiAllSkyDbCameraTable.id == camera.id)\
-            .filter(IndiAllSkyDbRawImageTable.dayDate < cutoff_age_images_date)\
-            .order_by(IndiAllSkyDbRawImageTable.createDate.asc())
         old_panorama_images = IndiAllSkyDbPanoramaImageTable.query\
             .join(IndiAllSkyDbPanoramaImageTable.camera)\
             .filter(IndiAllSkyDbCameraTable.id == camera.id)\
             .filter(IndiAllSkyDbPanoramaImageTable.dayDate < cutoff_age_images_date)\
             .order_by(IndiAllSkyDbPanoramaImageTable.createDate.asc())
 
+        # raw
+        cutoff_age_images_raw = now - timedelta(days=self.config.get('IMAGE_RAW_EXPIRE_DAYS', 10))
+        cutoff_age_images_raw_date = cutoff_age_images_raw.date()  # cutoff date based on dayDate attribute, not createDate
 
-        cutoff_age_timelapse = datetime.now() - timedelta(days=self.config.get('TIMELAPSE_EXPIRE_DAYS', 365))
+        old_raw_images = IndiAllSkyDbRawImageTable.query\
+            .join(IndiAllSkyDbRawImageTable.camera)\
+            .filter(IndiAllSkyDbCameraTable.id == camera.id)\
+            .filter(IndiAllSkyDbRawImageTable.dayDate < cutoff_age_images_raw_date)\
+            .order_by(IndiAllSkyDbRawImageTable.createDate.asc())
+
+
+        # fits
+        cutoff_age_images_fits = now - timedelta(days=self.config.get('IMAGE_FITS_EXPIRE_DAYS', 10))
+        cutoff_age_images_fits_date = cutoff_age_images_fits.date()  # cutoff date based on dayDate attribute, not createDate
+
+        old_fits_images = IndiAllSkyDbFitsImageTable.query\
+            .join(IndiAllSkyDbFitsImageTable.camera)\
+            .filter(IndiAllSkyDbCameraTable.id == camera.id)\
+            .filter(IndiAllSkyDbFitsImageTable.dayDate < cutoff_age_images_fits_date)\
+            .order_by(IndiAllSkyDbFitsImageTable.createDate.asc())
+
+
+        # videos
+        cutoff_age_timelapse = now - timedelta(days=self.config.get('TIMELAPSE_EXPIRE_DAYS', 365))
         cutoff_age_timelapse_date = cutoff_age_timelapse.date()  # cutoff date based on dayDate attribute, not createDate
 
         old_videos = IndiAllSkyDbVideoTable.query\
@@ -1745,58 +1759,29 @@ class VideoWorker(Process):
         ### to recache after every delete which cause a 1-5 second lag for each delete
 
 
-        image_id_list = list()
-        for entry in old_images:
-            image_id_list.append(entry.id)
-
-        fits_id_list = list()
-        for entry in old_fits_images:
-            fits_id_list.append(entry.id)
-
-        raw_id_list = list()
-        for entry in old_raw_images:
-            raw_id_list.append(entry.id)
-
-        panorama_image_id_list = list()
-        for entry in old_panorama_images:
-            panorama_image_id_list.append(entry.id)
+        asset_lists = [
+            (old_images, IndiAllSkyDbImageTable),
+            (old_panorama_images, IndiAllSkyDbPanoramaImageTable),
+            (old_fits_images, IndiAllSkyDbFitsImageTable),
+            (old_raw_images, IndiAllSkyDbRawImageTable),
+            (old_videos, IndiAllSkyDbVideoTable),
+            (old_mini_videos, IndiAllSkyDbMiniVideoTable),
+            (old_keograms, IndiAllSkyDbKeogramTable),
+            (old_startrails, IndiAllSkyDbStarTrailsTable),
+            (old_startrails_videos, IndiAllSkyDbStarTrailsVideoTable),
+            (old_panorama_videos, IndiAllSkyDbPanoramaVideoTable),
+        ]
 
 
-        video_id_list = list()
-        for entry in old_videos:
-            video_id_list.append(entry.id)
+        delete_count = 0
+        for asset_list, asset_table in asset_lists:
+            while True:
+                id_list = [entry.id for entry in asset_list.limit(500)]
 
-        mini_video_id_list = list()
-        for entry in old_mini_videos:
-            mini_video_id_list.append(entry.id)
+                if not id_list:
+                    break
 
-        keogram_id_list = list()
-        for entry in old_keograms:
-            keogram_id_list.append(entry.id)
-
-        startrail_image_id_list = list()
-        for entry in old_startrails:
-            startrail_image_id_list.append(entry.id)
-
-        startrail_video_id_list = list()
-        for entry in old_startrails_videos:
-            startrail_video_id_list.append(entry.id)
-
-        panorama_video_id_list = list()
-        for entry in old_panorama_videos:
-            panorama_video_id_list.append(entry.id)
-
-
-        self._deleteAssets(IndiAllSkyDbImageTable, image_id_list)
-        self._deleteAssets(IndiAllSkyDbFitsImageTable, fits_id_list)
-        self._deleteAssets(IndiAllSkyDbRawImageTable, raw_id_list)
-        self._deleteAssets(IndiAllSkyDbPanoramaImageTable, panorama_image_id_list)
-        self._deleteAssets(IndiAllSkyDbVideoTable, video_id_list)
-        self._deleteAssets(IndiAllSkyDbMiniVideoTable, mini_video_id_list)
-        self._deleteAssets(IndiAllSkyDbKeogramTable, keogram_id_list)
-        self._deleteAssets(IndiAllSkyDbStarTrailsTable, startrail_image_id_list)
-        self._deleteAssets(IndiAllSkyDbStarTrailsVideoTable, startrail_video_id_list)
-        self._deleteAssets(IndiAllSkyDbPanoramaVideoTable, panorama_video_id_list)
+                delete_count += self._deleteAssets(asset_table, id_list)
 
 
         # Remove empty folders
@@ -1814,10 +1799,12 @@ class VideoWorker(Process):
             except PermissionError as e:
                 logger.error('Cannot remove folder: %s', str(e))
 
-        task.setSuccess('Expired data')
+
+        task.setSuccess('Expired {0:d} assets', delete_count)
 
 
     def _deleteAssets(self, table, entry_id_list):
+        delete_count = 0
         for entry_id in entry_id_list:
             entry = table.query\
                 .filter(table.id == entry_id)\
@@ -1833,6 +1820,10 @@ class VideoWorker(Process):
 
             db.session.delete(entry)
             db.session.commit()
+
+            delete_count += 1
+
+        return delete_count
 
 
     def _getVideoFolder(self, video_date, camera):

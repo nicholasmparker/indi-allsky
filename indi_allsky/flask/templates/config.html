@@ -718,6 +718,21 @@ var camera_id = {{ camera_id }};
 
     <div class="form-group row">
         <div class="col-sm-2">
+            {{ form_config.CAPTURE_PAUSE.label }}
+        </div>
+        <div class="col-sm-2">
+            <div class="form-switch">
+                {{ form_config.CAPTURE_PAUSE(class='form-check-input') }}
+                <div id="CAPTURE_PAUSE-error" class="invalid-feedback text-danger" style="display: none;"></div>
+            </div>
+        </div>
+        <div class="col-sm-8">Pause image capture - Allows capture program to run without taking images</div>
+    </div>
+
+    <hr>
+
+    <div class="form-group row">
+        <div class="col-sm-2">
             {{ form_config.THUMBNAILS__IMAGES_AUTO.label }}
         </div>
         <div class="col-sm-2">
@@ -741,7 +756,24 @@ var camera_id = {{ camera_id }};
                 <div id="IMAGE_CALIBRATE_DARK-error" class="invalid-feedback text-danger" style="display: none;"></div>
             </div>
         </div>
-        <div class="col-sm-8">Disable if you want to include hot pixels your final image</div>
+        <div class="col-sm-8">
+            <div>Disable if you want to include hot pixels your final image</div>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-2">
+            {{ form_config.IMAGE_CALIBRATE_BPM.label }}
+        </div>
+        <div class="col-sm-2">
+            <div class="form-switch">
+                {{ form_config.IMAGE_CALIBRATE_BPM(class='form-check-input') }}
+                <div id="IMAGE_CALIBRATE_BPM-error" class="invalid-feedback text-danger" style="display: none;"></div>
+            </div>
+        </div>
+        <div class="col-sm-8">
+            <div>Normally disabled - Enable if you have problems with pulsing pixels</div>
+        </div>
     </div>
 
     <hr>
@@ -2903,7 +2935,35 @@ var camera_id = {{ camera_id }};
             {{ form_config.IMAGE_EXPIRE_DAYS(class='form-control bg-secondary') }}
             <div id="IMAGE_EXPIRE_DAYS-error" class="invalid-feedback text-danger" style="display: none;"></div>
         </div>
-        <div class="col-sm-8">Maximum age of original image files before deletion</div>
+        <div class="col-sm-8">
+            <div>Maximum age of original image files before deletion.  Affects timelapse and panorama images</div>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-2">
+            {{ form_config.IMAGE_RAW_EXPIRE_DAYS.label(class='col-form-label') }}
+        </div>
+        <div class="col-sm-2">
+            {{ form_config.IMAGE_RAW_EXPIRE_DAYS(class='form-control bg-secondary') }}
+            <div id="IMAGE_RAW_EXPIRE_DAYS-error" class="invalid-feedback text-danger" style="display: none;"></div>
+        </div>
+        <div class="col-sm-8">
+            <div></div>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-2">
+            {{ form_config.IMAGE_FITS_EXPIRE_DAYS.label(class='col-form-label') }}
+        </div>
+        <div class="col-sm-2">
+            {{ form_config.IMAGE_FITS_EXPIRE_DAYS(class='form-control bg-secondary') }}
+            <div id="IMAGE_FITS_EXPIRE_DAYS-error" class="invalid-feedback text-danger" style="display: none;"></div>
+        </div>
+        <div class="col-sm-8">
+            <div></div>
+        </div>
     </div>
 
     <div class="form-group row">
@@ -2914,7 +2974,9 @@ var camera_id = {{ camera_id }};
             {{ form_config.TIMELAPSE_EXPIRE_DAYS(class='form-control bg-secondary') }}
             <div id="TIMELAPSE_EXPIRE_DAYS-error" class="invalid-feedback text-danger" style="display: none;"></div>
         </div>
-        <div class="col-sm-8">Maximum age of timelapse, keogram, and star trails before deletion</div>
+        <div class="col-sm-8">
+            <div>Maximum age of timelapse, keogram, and star trails before deletion</div>
+        </div>
     </div>
 
     <div class="form-group row">
@@ -3642,7 +3704,9 @@ var camera_id = {{ camera_id }};
                 <div id="MQTTPUBLISH__ENABLE-error" class="invalid-feedback text-danger" style="display: none;"></div>
             </div>
         </div>
-        <div class="col-sm-8">Enable MQTT Publishing</div>
+        <div class="col-sm-8">
+            <div><a href="https://github.com/aaronwmorris/indi-allsky/wiki/MQTT-Broker-Publishing" class="text-decoration-none link-info" target="_blank">MQTT Broker Publishing Wiki</a></div>
+        </div>
     </div>
 
     <div class="form-group row">
@@ -5901,6 +5965,8 @@ const field_names = [
     'IMAGE_ALIGN_POINTS',
     'IMAGE_ALIGN_SOURCEMINAREA',
     'IMAGE_EXPIRE_DAYS',
+    'IMAGE_RAW_EXPIRE_DAYS',
+    'IMAGE_FITS_EXPIRE_DAYS',
     'IMAGE_QUEUE_MAX',
     'IMAGE_QUEUE_MIN',
     'IMAGE_QUEUE_BACKOFF',
@@ -6121,6 +6187,7 @@ const checkbox_field_names = [
     'DETECT_STARS',
     'DETECT_METEORS',
     'DETECT_DRAW',
+    'CAPTURE_PAUSE',
     'TIMELAPSE_ENABLE',
     'DAYTIME_CAPTURE',
     'DAYTIME_CAPTURE_SAVE',
@@ -6150,6 +6217,7 @@ const checkbox_field_names = [
     'IMAGE_STACK_ALIGN',
     'IMAGE_STACK_SPLIT',
     'IMAGE_CALIBRATE_DARK',
+    'IMAGE_CALIBRATE_BPM',
     'IMAGE_SAVE_FITS_PRE_DARK',
     'THUMBNAILS__IMAGES_AUTO',
     'NIGHT_GRAYSCALE',

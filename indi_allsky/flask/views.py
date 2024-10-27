@@ -220,9 +220,13 @@ class JsonLatestImageView(JsonView):
                 return data
 
 
+        if self.capture_pause:
+            data['latest_image']['message'] = 'Capture paused'
+            return data
+
+
         if not night:
             ### day
-
             if not self.local_indi_allsky and self.daytime_capture and not self.daytime_capture_save:
                 # remote cameras will not receive daytime images when save is disabled
                 if self.sun_set_date:
@@ -393,6 +397,10 @@ class LatestPanoramaImageRedirect(LatestImageRedirect):
     model = IndiAllSkyDbPanoramaImageTable
 
 
+class LatestRawImageRedirect(LatestImageRedirect):
+    model = IndiAllSkyDbRawImageTable
+
+
 class LatestThumbnailRedirect(LatestImageRedirect):
 
     def getLatestImage(self, camera_id):
@@ -532,6 +540,11 @@ class LatestStartrailViewRedirect(LatestImageViewRedirect):
 class LatestPanoramaImageViewRedirect(LatestImageViewRedirect):
     model = IndiAllSkyDbPanoramaImageTable
     view_view = 'indi_allsky.panorama_image_view'
+
+
+class LatestRawImageViewRedirect(LatestImageViewRedirect):
+    model = IndiAllSkyDbRawImageTable
+    view_view = 'indi_allsky.raw_image_view'
 
 
 class LatestTimelapseVideoWatchRedirect(BaseView):
@@ -1551,6 +1564,7 @@ class ConfigView(FormView):
             'LOCATION_ELEVATION'             : self.indi_allsky_config.get('LOCATION_ELEVATION', 0),
             'TIMELAPSE_ENABLE'               : self.indi_allsky_config.get('TIMELAPSE_ENABLE', True),
             'TIMELAPSE_SKIP_FRAMES'          : self.indi_allsky_config.get('TIMELAPSE_SKIP_FRAMES', 4),
+            'CAPTURE_PAUSE'                  : self.indi_allsky_config.get('CAPTURE_PAUSE', False),
             'DAYTIME_CAPTURE'                : self.indi_allsky_config.get('DAYTIME_CAPTURE', True),
             'DAYTIME_CAPTURE_SAVE'           : self.indi_allsky_config.get('DAYTIME_CAPTURE_SAVE', True),
             'DAYTIME_TIMELAPSE'              : self.indi_allsky_config.get('DAYTIME_TIMELAPSE', True),
@@ -1593,6 +1607,7 @@ class ConfigView(FormView):
             'STARTRAILS_TIMELAPSE_MINFRAMES' : self.indi_allsky_config.get('STARTRAILS_TIMELAPSE_MINFRAMES', 250),
             'STARTRAILS_USE_DB_DATA'         : self.indi_allsky_config.get('STARTRAILS_USE_DB_DATA', True),
             'IMAGE_CALIBRATE_DARK'           : self.indi_allsky_config.get('IMAGE_CALIBRATE_DARK', True),
+            'IMAGE_CALIBRATE_BPM'            : self.indi_allsky_config.get('IMAGE_CALIBRATE_BPM', False),
             'IMAGE_SAVE_FITS_PRE_DARK'       : self.indi_allsky_config.get('IMAGE_SAVE_FITS_PRE_DARK', False),
             'IMAGE_EXIF_PRIVACY'             : self.indi_allsky_config.get('IMAGE_EXIF_PRIVACY', False),
             'IMAGE_FILE_TYPE'                : self.indi_allsky_config.get('IMAGE_FILE_TYPE', 'jpg'),
@@ -1645,6 +1660,8 @@ class ConfigView(FormView):
             'IMAGE_QUEUE_BACKOFF'            : self.indi_allsky_config.get('IMAGE_QUEUE_BACKOFF', 0.5),
             'THUMBNAILS__IMAGES_AUTO'        : self.indi_allsky_config.get('THUMBNAILS', {}).get('IMAGES_AUTO', True),
             'IMAGE_EXPIRE_DAYS'              : self.indi_allsky_config.get('IMAGE_EXPIRE_DAYS', 10),
+            'IMAGE_RAW_EXPIRE_DAYS'          : self.indi_allsky_config.get('IMAGE_RAW_EXPIRE_DAYS', 10),
+            'IMAGE_FITS_EXPIRE_DAYS'         : self.indi_allsky_config.get('IMAGE_FITS_EXPIRE_DAYS', 10),
             'TIMELAPSE_EXPIRE_DAYS'          : self.indi_allsky_config.get('TIMELAPSE_EXPIRE_DAYS', 365),
             'TIMELAPSE_OVERWRITE'            : self.indi_allsky_config.get('TIMELAPSE_OVERWRITE', False),
             'FFMPEG_FRAMERATE'               : self.indi_allsky_config.get('FFMPEG_FRAMERATE', 25),
@@ -1882,14 +1899,14 @@ class ConfigView(FormView):
             'ADSB__LABEL_ENABLE'             : self.indi_allsky_config.get('ADSB', {}).get('LABEL_ENABLE', True),
             'ADSB__LABEL_LIMIT'              : self.indi_allsky_config.get('ADSB', {}).get('LABEL_LIMIT', 10),
             'ADSB__AIRCRAFT_LABEL_TEMPLATE'  : self.indi_allsky_config.get('ADSB', {}).get('AIRCRAFT_LABEL_TEMPLATE', '{id:s} {distance:0.1f}km {alt:0.1f}\u00b0 {dir:s}'),
-            'ADSB__IMAGE_LABEL_TEMPLATE_PREFIX' : self.indi_allsky_config.get('ADSB', {}).get('IMAGE_LABEL_TEMPLATE_PREFIX', '# xy:-15,200 (Right)\n# anchor:ra (Right Justified)\n# color:200,200,200\nAircraft'),
+            'ADSB__IMAGE_LABEL_TEMPLATE_PREFIX' : self.indi_allsky_config.get('ADSB', {}).get('IMAGE_LABEL_TEMPLATE_PREFIX', '# xy:15,300 (Left)\n# anchor:la (Left Justified)\n# color:200,200,200\nAircraft'),
             'SATELLITE_TRACK__ENABLE'              : self.indi_allsky_config.get('SATELLITE_TRACK', {}).get('ENABLE', False),
             'SATELLITE_TRACK__DAYTIME_TRACK'       : self.indi_allsky_config.get('SATELLITE_TRACK', {}).get('DAYTIME_TRACK', False),
             'SATELLITE_TRACK__ALT_DEG_MIN'         : self.indi_allsky_config.get('SATELLITE_TRACK', {}).get('ALT_DEG_MIN', 20.0),
             'SATELLITE_TRACK__LABEL_ENABLE'        : self.indi_allsky_config.get('SATELLITE_TRACK', {}).get('LABEL_ENABLE', True),
             'SATELLITE_TRACK__LABEL_LIMIT'         : self.indi_allsky_config.get('SATELLITE_TRACK', {}).get('LABEL_LIMIT', 10),
             'SATELLITE_TRACK__SAT_LABEL_TEMPLATE'  : self.indi_allsky_config.get('SATELLITE_TRACK', {}).get('SAT_LABEL_TEMPLATE', '{label:s} {alt:0.1f}\u00b0 {dir:s}'),
-            'SATELLITE_TRACK__IMAGE_LABEL_TEMPLATE_PREFIX' : self.indi_allsky_config.get('SATELLITE_TRACK', {}).get('IMAGE_LABEL_TEMPLATE_PREFIX', '# xy:15,300 (Left)\n# anchor:la (Left Justified)\n# color:200,200,200\nSatellites'),
+            'SATELLITE_TRACK__IMAGE_LABEL_TEMPLATE_PREFIX' : self.indi_allsky_config.get('SATELLITE_TRACK', {}).get('IMAGE_LABEL_TEMPLATE_PREFIX', '# xy:-15,200 (Right)\n# anchor:ra (Right Justified)\n# color:200,200,200\nSatellites'),
             'RELOAD_ON_SAVE'                 : False,
             'CONFIG_NOTE'                    : '',
             'ENCRYPT_PASSWORDS'              : self.indi_allsky_config.get('ENCRYPT_PASSWORDS', False),  # do not adjust
@@ -2291,6 +2308,7 @@ class AjaxConfigView(BaseView):
         self.indi_allsky_config['LOCATION_ELEVATION']                   = int(request.json['LOCATION_ELEVATION'])
         self.indi_allsky_config['TIMELAPSE_ENABLE']                     = bool(request.json['TIMELAPSE_ENABLE'])
         self.indi_allsky_config['TIMELAPSE_SKIP_FRAMES']                = int(request.json['TIMELAPSE_SKIP_FRAMES'])
+        self.indi_allsky_config['CAPTURE_PAUSE']                        = bool(request.json['CAPTURE_PAUSE'])
         self.indi_allsky_config['DAYTIME_CAPTURE']                      = bool(request.json['DAYTIME_CAPTURE'])
         self.indi_allsky_config['DAYTIME_CAPTURE_SAVE']                 = bool(request.json['DAYTIME_CAPTURE_SAVE'])
         self.indi_allsky_config['DAYTIME_TIMELAPSE']                    = bool(request.json['DAYTIME_TIMELAPSE'])
@@ -2333,6 +2351,7 @@ class AjaxConfigView(BaseView):
         self.indi_allsky_config['STARTRAILS_TIMELAPSE_MINFRAMES']       = int(request.json['STARTRAILS_TIMELAPSE_MINFRAMES'])
         self.indi_allsky_config['STARTRAILS_USE_DB_DATA']               = bool(request.json['STARTRAILS_USE_DB_DATA'])
         self.indi_allsky_config['IMAGE_CALIBRATE_DARK']                 = bool(request.json['IMAGE_CALIBRATE_DARK'])
+        self.indi_allsky_config['IMAGE_CALIBRATE_BPM']                  = bool(request.json['IMAGE_CALIBRATE_BPM'])
         self.indi_allsky_config['IMAGE_SAVE_FITS_PRE_DARK']             = bool(request.json['IMAGE_SAVE_FITS_PRE_DARK'])
         self.indi_allsky_config['IMAGE_EXIF_PRIVACY']                   = bool(request.json['IMAGE_EXIF_PRIVACY'])
         self.indi_allsky_config['IMAGE_FILE_TYPE']                      = str(request.json['IMAGE_FILE_TYPE'])
@@ -2387,6 +2406,8 @@ class AjaxConfigView(BaseView):
         self.indi_allsky_config['IMAGE_QUEUE_BACKOFF']                  = float(request.json['IMAGE_QUEUE_BACKOFF'])
         self.indi_allsky_config['THUMBNAILS']['IMAGES_AUTO']            = bool(request.json['THUMBNAILS__IMAGES_AUTO'])
         self.indi_allsky_config['IMAGE_EXPIRE_DAYS']                    = int(request.json['IMAGE_EXPIRE_DAYS'])
+        self.indi_allsky_config['IMAGE_RAW_EXPIRE_DAYS']                = int(request.json['IMAGE_RAW_EXPIRE_DAYS'])
+        self.indi_allsky_config['IMAGE_FITS_EXPIRE_DAYS']               = int(request.json['IMAGE_FITS_EXPIRE_DAYS'])
         self.indi_allsky_config['TIMELAPSE_EXPIRE_DAYS']                = int(request.json['TIMELAPSE_EXPIRE_DAYS'])
         self.indi_allsky_config['TIMELAPSE_OVERWRITE']                  = bool(request.json['TIMELAPSE_OVERWRITE'])
         self.indi_allsky_config['FFMPEG_FRAMERATE']                     = int(request.json['FFMPEG_FRAMERATE'])
@@ -4132,27 +4153,24 @@ class AjaxSystemInfoView(BaseView):
         ### thumbnails with a single query.  Deleting associated thumbnails causes sqlalchemy
         ### to recache after every delete which cause a 1-5 second lag for each delete
 
-        image_id_list = list()
-        for entry in image_query:
-            image_id_list.append(entry.id)
 
-        fits_id_list = list()
-        for entry in fits_image_query:
-            fits_id_list.append(entry.id)
-
-        raw_id_list = list()
-        for entry in raw_image_query:
-            raw_id_list.append(entry.id)
-
-        panorama_image_id_list = list()
-        for entry in panorama_image_query:
-            panorama_image_id_list.append(entry.id)
+        asset_lists = [
+            (image_query, IndiAllSkyDbImageTable),
+            (fits_image_query, IndiAllSkyDbFitsImageTable),
+            (raw_image_query, IndiAllSkyDbRawImageTable),
+            (panorama_image_query, IndiAllSkyDbPanoramaImageTable),
+        ]
 
 
-        delete_count = self._deleteAssets(IndiAllSkyDbImageTable, image_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbFitsImageTable, fits_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbRawImageTable, raw_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbPanoramaImageTable, panorama_image_id_list)
+        delete_count = 0
+        for asset_list, asset_table in asset_lists:
+            while True:
+                id_list = [entry.id for entry in asset_list.limit(500)]
+
+                if not id_list:
+                    break
+
+                delete_count += self._deleteAssets(asset_table, id_list)
 
 
         return delete_count
@@ -4194,37 +4212,26 @@ class AjaxSystemInfoView(BaseView):
         ### thumbnails with a single query.  Deleting associated thumbnails causes sqlalchemy
         ### to recache after every delete which cause a 1-5 second lag for each delete
 
-        video_id_list = list()
-        for entry in video_query:
-            video_id_list.append(entry.id)
 
-        mini_video_id_list = list()
-        for entry in mini_video_query:
-            mini_video_id_list.append(entry.id)
-
-        keogram_id_list = list()
-        for entry in keogram_query:
-            keogram_id_list.append(entry.id)
-
-        startrail_image_id_list = list()
-        for entry in startrail_query:
-            startrail_image_id_list.append(entry.id)
-
-        startrail_video_id_list = list()
-        for entry in startrail_video_query:
-            startrail_video_id_list.append(entry.id)
-
-        panorama_video_id_list = list()
-        for entry in panorama_video_query:
-            panorama_video_id_list.append(entry.id)
+        asset_lists = [
+            (video_query, IndiAllSkyDbVideoTable),
+            (mini_video_query, IndiAllSkyDbMiniVideoTable),
+            (keogram_query, IndiAllSkyDbKeogramTable),
+            (startrail_query, IndiAllSkyDbStarTrailsTable),
+            (startrail_video_query, IndiAllSkyDbStarTrailsVideoTable),
+            (panorama_video_query, IndiAllSkyDbPanoramaVideoTable),
+        ]
 
 
-        delete_count = self._deleteAssets(IndiAllSkyDbVideoTable, video_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbMiniVideoTable, mini_video_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbKeogramTable, keogram_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbStarTrailsTable, startrail_image_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbStarTrailsVideoTable, startrail_video_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbPanoramaVideoTable, panorama_video_id_list)
+        delete_count = 0
+        for asset_list, asset_table in asset_lists:
+            while True:
+                id_list = [entry.id for entry in asset_list.limit(500)]
+
+                if not id_list:
+                    break
+
+                delete_count += self._deleteAssets(asset_table, id_list)
 
 
         return delete_count
@@ -4295,43 +4302,27 @@ class AjaxSystemInfoView(BaseView):
         ### thumbnails with a single query.  Deleting associated thumbnails causes sqlalchemy
         ### to recache after every delete which cause a 1-5 second lag for each delete
 
-        image_id_list = list()
-        for entry in image_query:
-            image_id_list.append(entry.id)
 
-        fits_id_list = list()
-        for entry in fits_image_query:
-            fits_id_list.append(entry.id)
-
-        raw_id_list = list()
-        for entry in raw_image_query:
-            raw_id_list.append(entry.id)
-
-        panorama_image_id_list = list()
-        for entry in panorama_image_query:
-            panorama_image_id_list.append(entry.id)
+        asset_lists = [
+            (image_query, IndiAllSkyDbImageTable),
+            (fits_image_query, IndiAllSkyDbFitsImageTable),
+            (raw_image_query, IndiAllSkyDbRawImageTable),
+            (panorama_image_query, IndiAllSkyDbPanoramaImageTable),
+            (video_query, IndiAllSkyDbVideoTable),
+            (keogram_query, IndiAllSkyDbKeogramTable),
+            (panorama_video_query, IndiAllSkyDbPanoramaVideoTable),
+        ]
 
 
-        video_id_list = list()
-        for entry in video_query:
-            video_id_list.append(entry.id)
+        delete_count = 0
+        for asset_list, asset_table in asset_lists:
+            while True:
+                id_list = [entry.id for entry in asset_list.limit(500)]
 
-        keogram_id_list = list()
-        for entry in keogram_query:
-            keogram_id_list.append(entry.id)
+                if not id_list:
+                    break
 
-        panorama_video_id_list = list()
-        for entry in panorama_video_query:
-            panorama_video_id_list.append(entry.id)
-
-
-        delete_count = self._deleteAssets(IndiAllSkyDbImageTable, image_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbFitsImageTable, fits_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbRawImageTable, raw_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbPanoramaImageTable, panorama_image_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbVideoTable, video_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbKeogramTable, keogram_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbPanoramaVideoTable, panorama_video_id_list)
+                delete_count += self._deleteAssets(asset_table, id_list)
 
 
         return delete_count
@@ -4344,7 +4335,7 @@ class AjaxSystemInfoView(BaseView):
                 .filter(table.id == entry_id)\
                 .one()
 
-            app.logger.info('Removing old %s entry: %s', entry.__class__.__name__, entry.filename)
+            app.logger.info('Removing %s entry: %s', entry.__class__.__name__, entry.filename)
 
             try:
                 entry.deleteAsset()
@@ -4758,6 +4749,13 @@ class AjaxTimelapseGeneratorView(BaseView):
 
 
     def dispatch_request(self):
+        if not current_user.is_admin:
+            json_data = {
+                'form_global' : ['User does not have permission to generate content'],
+            }
+            return jsonify(json_data), 400
+
+
         camera_id = int(request.json['CAMERA_ID'])
 
         form_timelapsegen = IndiAllskyTimelapseGeneratorForm(data=request.json, camera_id=camera_id)
@@ -5378,6 +5376,14 @@ class AjaxFocusControllerView(BaseView):
         from ..focuser import IndiAllSkyFocuser
         from ..devices.exceptions import DeviceControlException
 
+
+        if not current_user.is_admin:
+            json_data = {
+                'focuser_error' : ['User does not have permission to adjust focus'],
+            }
+            return jsonify(json_data), 400
+
+
         form_focuscontroller = IndiAllskyFocusControllerForm(data=request.json)
 
         if not form_focuscontroller.validate():
@@ -5509,6 +5515,7 @@ class ImageProcessingView(TemplateView):
             'FISH2PANO__FLIP_H'              : self.indi_allsky_config.get('FISH2PANO', {}).get('FLIP_H', False),
             'PROCESSING_SPLIT_SCREEN'        : False,
             'IMAGE_CALIBRATE_DARK'           : False,  # darks are almost always already applied
+            'IMAGE_CALIBRATE_BPM'            : False,
         }
 
         # SQM_ROI
@@ -5612,6 +5619,7 @@ class JsonImageProcessingView(JsonView):
 
         p_config['CCD_BIT_DEPTH']                        = int(request.json['CCD_BIT_DEPTH'])
         p_config['IMAGE_CALIBRATE_DARK']                 = bool(request.json['IMAGE_CALIBRATE_DARK'])
+        p_config['IMAGE_CALIBRATE_BPM']                  = bool(request.json['IMAGE_CALIBRATE_BPM'])
         p_config['NIGHT_CONTRAST_ENHANCE']               = bool(request.json['NIGHT_CONTRAST_ENHANCE'])
         p_config['CONTRAST_ENHANCE_16BIT']               = bool(request.json['CONTRAST_ENHANCE_16BIT'])
         p_config['CLAHE_CLIPLIMIT']                      = float(request.json['CLAHE_CLIPLIMIT'])
@@ -6723,6 +6731,13 @@ class AjaxMiniTimelapseGeneratorView(BaseView):
 
 
     def dispatch_request(self):
+        if not current_user.is_admin:
+            json_data = {
+                'failure-message' : 'User does not have permission to generate content',
+            }
+            return jsonify(json_data), 400
+
+
         image_id = int(request.json['IMAGE_ID'])
         camera_id = int(request.json['CAMERA_ID'])
         pre_seconds = int(request.json['PRE_SECONDS'])
@@ -7259,6 +7274,7 @@ bp_allsky.add_url_rule('/latestimage', view_func=LatestImageRedirect.as_view('la
 bp_allsky.add_url_rule('/latestkeogram', view_func=LatestKeogramRedirect.as_view('latest_keogram_redirect_view'))
 bp_allsky.add_url_rule('/lateststartrail', view_func=LatestStartrailRedirect.as_view('latest_startrail_redirect_view'))
 bp_allsky.add_url_rule('/latestpanorama', view_func=LatestPanoramaImageRedirect.as_view('latest_panorama_image_redirect_view'))
+bp_allsky.add_url_rule('/latestraw', view_func=LatestRawImageRedirect.as_view('latest_raw_image_redirect_view'))
 bp_allsky.add_url_rule('/latestthumbnail', view_func=LatestThumbnailRedirect.as_view('latest_thumbnail_redirect_view'))
 bp_allsky.add_url_rule('/latesttimelapse', view_func=LatestTimelapseVideoRedirect.as_view('latest_timelapse_video_redirect_view'))
 bp_allsky.add_url_rule('/lateststartrailvideo', view_func=LatestStartrailVideoRedirect.as_view('latest_startrail_video_redirect_view'))
@@ -7268,6 +7284,7 @@ bp_allsky.add_url_rule('/latestimageview', view_func=LatestImageViewRedirect.as_
 bp_allsky.add_url_rule('/latestkeogramview', view_func=LatestKeogramViewRedirect.as_view('latest_keogram_view_redirect_view'))
 bp_allsky.add_url_rule('/lateststartrailview', view_func=LatestKeogramViewRedirect.as_view('latest_startrail_view_redirect_view'))
 bp_allsky.add_url_rule('/latestpanoramaview', view_func=LatestPanoramaImageViewRedirect.as_view('latest_panorama_image_view_redirect_view'))
+bp_allsky.add_url_rule('/latestrawview', view_func=LatestRawImageViewRedirect.as_view('latest_raw_image_view_redirect_view'))
 bp_allsky.add_url_rule('/latesttimelapsewatch', view_func=LatestTimelapseVideoWatchRedirect.as_view('latest_timelapse_video_watch_redirect_view'))
 bp_allsky.add_url_rule('/lateststartrailvideowatch', view_func=LatestStartrailVideoWatchRedirect.as_view('latest_startrail_video_watch_redirect_view'))
 bp_allsky.add_url_rule('/latestpanoramavideowatch', view_func=LatestPanoramaVideoWatchRedirect.as_view('latest_panorama_video_watch_redirect_view'))

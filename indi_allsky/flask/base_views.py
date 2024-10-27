@@ -70,6 +70,7 @@ class BaseView(View):
 
         self.daytime_capture = self.camera.daytime_capture
         self.daytime_capture_save = self.camera.daytime_capture_save
+        self.capture_pause = self.camera.capture_pause
 
         self.s3_prefix = self.camera.s3_prefix
         self.web_nonlocal_images = self.camera.web_nonlocal_images
@@ -285,8 +286,12 @@ class BaseView(View):
             data['status'] = '<span class="text-primary">STOPPING</span>'
         elif status == constants.STATUS_STOPPED:
             data['status'] = '<span class="text-primary">STOPPED</span>'
+        elif status == constants.STATUS_PAUSED:
+            data['status'] = '<span class="text-muted">PAUSED</span>'
         elif status == constants.STATUS_NOCAMERA:
             data['status'] = '<span class="text-danger">NO CAMERA</span>'
+        elif status == constants.STATUS_CAMERAERROR:
+            data['status'] = '<span class="text-danger">CAMERA ERROR</span>'
         elif status == constants.STATUS_NOINDISERVER:
             data['status'] = '<span class="text-danger">NO INDISERVER</span>'
         else:
@@ -719,8 +724,8 @@ class TemplateView(BaseView):
         ('5', 'Heat Index'),
         ('6', 'Wind Dir Degrees'),
         ('7', 'SQM'),
-        ('8', 'Reserved'),
-        ('9', 'Reserved'),
+        ('8', 'Future Use 8'),
+        ('9', 'Future Use 9'),
         ('10', 'User Slot 10'),
         ('11', 'User Slot 11'),
         ('12', 'User Slot 12'),
@@ -742,6 +747,15 @@ class TemplateView(BaseView):
         ('28', 'User Slot 28'),
         ('29', 'User Slot 29'),
         ('100', 'Camera Temp'),
+        ('101', 'Future Use 1'),
+        ('102', 'Future Use 2'),
+        ('103', 'Future Use 3'),
+        ('104', 'Future Use 4'),
+        ('105', 'Future Use 5'),
+        ('106', 'Future Use 6'),
+        ('107', 'Future Use 7'),
+        ('108', 'Future Use 8'),
+        ('109', 'Future Use 9'),
         ('110', 'System Temp 10'),
         ('111', 'System Temp 11'),
         ('112', 'System Temp 12'),
@@ -905,7 +919,7 @@ class TemplateView(BaseView):
                             temp_sensor__a_class.METADATA['name'],
                             temp_sensor__a_label,
                             temp_sensor__a_class.METADATA['labels'][x],
-                        )
+                        ),
                     )
             except AttributeError:
                 app.logger.error('Unknown sensor class: %s', temp_sensor__a_classname)
@@ -922,7 +936,7 @@ class TemplateView(BaseView):
                             temp_sensor__b_class.METADATA['name'],
                             temp_sensor__b_label,
                             temp_sensor__b_class.METADATA['labels'][x],
-                        )
+                        ),
                     )
             except AttributeError:
                 app.logger.error('Unknown sensor class: %s', temp_sensor__a_classname)
@@ -939,7 +953,7 @@ class TemplateView(BaseView):
                             temp_sensor__c_class.METADATA['name'],
                             temp_sensor__c_label,
                             temp_sensor__c_class.METADATA['labels'][x],
-                        )
+                        ),
                     )
             except AttributeError:
                 app.logger.error('Unknown sensor class: %s', temp_sensor__a_classname)
@@ -980,6 +994,7 @@ class FakeCamera(object):
     daytime_capture = True
     daytime_capture_save = True
     daytime_timelapse = True
+    capture_pause = False
     web_nonlocal_images = False
     web_local_images_admin = False
     utc_offset = 0

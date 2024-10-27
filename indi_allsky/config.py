@@ -107,6 +107,7 @@ class IndiAllSkyConfigBase(object):
         "LOCATION_LATITUDE"  : 33.0,
         "LOCATION_LONGITUDE" : -84.0,
         "LOCATION_ELEVATION" : 300.0,
+        "CAPTURE_PAUSE"            : False,
         "TIMELAPSE_ENABLE"         : True,
         "TIMELAPSE_SKIP_FRAMES"    : 4,
         "DAYTIME_CAPTURE"          : True,
@@ -157,6 +158,7 @@ class IndiAllSkyConfigBase(object):
         "STARTRAILS_MOON_PHASE_THOLD"    : 101.0,
         "STARTRAILS_USE_DB_DATA"         : True,
         "IMAGE_CALIBRATE_DARK"  : True,
+        "IMAGE_CALIBRATE_BPM"   : False,
         "IMAGE_EXIF_PRIVACY"    : False,
         "IMAGE_FILE_TYPE" : "jpg",  # jpg, png, or tif
         "IMAGE_FILE_COMPRESSION" : {
@@ -216,6 +218,8 @@ class IndiAllSkyConfigBase(object):
             "IMAGES_AUTO" : True,
         },
         "IMAGE_EXPIRE_DAYS"     : 10,
+        "IMAGE_RAW_EXPIRE_DAYS" : 10,
+        "IMAGE_FITS_EXPIRE_DAYS": 10,
         "TIMELAPSE_EXPIRE_DAYS" : 365,
         "TIMELAPSE_OVERWRITE"   : False,
         "IMAGE_QUEUE_MAX"       : 3,
@@ -515,7 +519,7 @@ class IndiAllSkyConfigBase(object):
             "LABEL_ENABLE"           : True,
             "LABEL_LIMIT"            : 10,
             "AIRCRAFT_LABEL_TEMPLATE"      : "{id:s} {distance:0.1f}km {alt:0.1f}\u00b0 {dir:s}",
-            "IMAGE_LABEL_TEMPLATE_PREFIX"  : "# xy:-15,200 (Right)\n# anchor:ra (Right Justified)\n# color:200,200,200\nAircraft",
+            "IMAGE_LABEL_TEMPLATE_PREFIX"  : "# xy:15,300 (Left)\n# anchor:la (Left Justified)\n# color:200,200,200\nAircraft",
         },
         "SATELLITE_TRACK" : {
             "ENABLE"                 : False,
@@ -524,7 +528,7 @@ class IndiAllSkyConfigBase(object):
             "LABEL_ENABLE"           : True,
             "LABEL_LIMIT"            : 10,
             "SAT_LABEL_TEMPLATE"     : "{title:s} {alt:0.1f}\u00b0 {dir:s}",
-            "IMAGE_LABEL_TEMPLATE_PREFIX" : "# xy:15,300 (Left)\n# anchor:la (Left Justified)\n# color:200,200,200\nSatellites",
+            "IMAGE_LABEL_TEMPLATE_PREFIX" : "# xy:-15,200 (Right)\n# anchor:ra (Right Justified)\n# color:200,200,200\nSatellites",
         },
     })
 

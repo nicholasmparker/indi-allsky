@@ -65,6 +65,8 @@ class ExpireImages(object):
 
 
         self._image_days = 10
+        self._image_raw_days = 10
+        self._image_fits_days = 10
         self._video_days = 365
 
 
@@ -87,6 +89,24 @@ class ExpireImages(object):
 
 
     @property
+    def image_raw_days(self):
+        return self._image_raw_days
+
+    @image_raw_days.setter
+    def image_raw_days(self, new_image_raw_days):
+        self._image_raw_days = int(new_image_raw_days)
+
+
+    @property
+    def image_fits_days(self):
+        return self._image_fits_days
+
+    @image_fits_days.setter
+    def image_fits_days(self, new_image_fits_days):
+        self._image_fits_days = int(new_image_fits_days)
+
+
+    @property
     def video_days(self):
         return self._video_days
 
@@ -104,31 +124,48 @@ class ExpireImages(object):
 
 
     def main(self):
-        logger.info('Cutoff for images: %d days', self.image_days)
-        logger.info('Cutoff for videos: %d days', self.video_days)
+        logger.info('Cutoff for images:       %d days', self.image_days)
+        logger.info('Cutoff for raw images:   %d days', self.image_raw_days)
+        logger.info('Cutoff for fits images:  %d days', self.image_fits_days)
+        logger.info('Cutoff for videos:       %d days', self.video_days)
 
         time.sleep(5)
 
 
+        now = datetime.now()
+
         # Old image files need to be pruned
-        cutoff_age_images = datetime.now() - timedelta(days=self.image_days)
+        cutoff_age_images = now - timedelta(days=self.image_days)
         cutoff_age_images_date = cutoff_age_images.date()  # cutoff date based on dayDate attribute, not createDate
 
         old_images = IndiAllSkyDbImageTable.query\
             .filter(IndiAllSkyDbImageTable.dayDate < cutoff_age_images_date)\
             .order_by(IndiAllSkyDbImageTable.createDate.asc())
-        old_fits_images = IndiAllSkyDbFitsImageTable.query\
-            .filter(IndiAllSkyDbFitsImageTable.dayDate < cutoff_age_images_date)\
-            .order_by(IndiAllSkyDbFitsImageTable.createDate.asc())
-        old_raw_images = IndiAllSkyDbRawImageTable.query\
-            .filter(IndiAllSkyDbRawImageTable.dayDate < cutoff_age_images_date)\
-            .order_by(IndiAllSkyDbRawImageTable.createDate.asc())
         old_panorama_images = IndiAllSkyDbPanoramaImageTable.query\
             .filter(IndiAllSkyDbPanoramaImageTable.dayDate < cutoff_age_images_date)\
             .order_by(IndiAllSkyDbPanoramaImageTable.createDate.asc())
 
 
-        cutoff_age_timelapse = datetime.now() - timedelta(days=self.video_days)
+        # raw
+        cutoff_age_images_raw = now - timedelta(days=self.image_raw_days)
+        cutoff_age_images_raw_date = cutoff_age_images_raw.date()  # cutoff date based on dayDate attribute, not createDate
+
+        old_raw_images = IndiAllSkyDbRawImageTable.query\
+            .filter(IndiAllSkyDbRawImageTable.dayDate < cutoff_age_images_raw_date)\
+            .order_by(IndiAllSkyDbRawImageTable.createDate.asc())
+
+
+        # fits
+        cutoff_age_images_fits = now - timedelta(days=self.image_fits_days)
+        cutoff_age_images_fits_date = cutoff_age_images_fits.date()  # cutoff date based on dayDate attribute, not createDate
+
+        old_fits_images = IndiAllSkyDbFitsImageTable.query\
+            .filter(IndiAllSkyDbFitsImageTable.dayDate < cutoff_age_images_fits_date)\
+            .order_by(IndiAllSkyDbFitsImageTable.createDate.asc())
+
+
+        # videos
+        cutoff_age_timelapse = now - timedelta(days=self.video_days)
         cutoff_age_timelapse_date = cutoff_age_timelapse.date()  # cutoff date based on dayDate attribute, not createDate
 
         old_videos = IndiAllSkyDbVideoTable.query\
@@ -152,9 +189,9 @@ class ExpireImages(object):
 
 
         logger.warning('Found %d expired images to delete', old_images.count())
+        logger.warning('Found %d expired Panorama images to delete', old_panorama_images.count())
         logger.warning('Found %d expired FITS images to delete', old_fits_images.count())
         logger.warning('Found %d expired RAW images to delete', old_raw_images.count())
-        logger.warning('Found %d expired Panorama images to delete', old_panorama_images.count())
         logger.warning('Found %d expired videos to delete', old_videos.count())
         logger.warning('Found %d expired mini videos to delete', old_mini_videos.count())
         logger.warning('Found %d expired keograms to delete', old_keograms.count())
@@ -164,72 +201,44 @@ class ExpireImages(object):
         logger.info('Proceeding in 10 seconds')
 
         time.sleep(10)
-        logger.info('Building id lists...')
 
 
         ### Getting IDs first then deleting each file is faster than deleting all files with
         ### thumbnails with a single query.  Deleting associated thumbnails causes sqlalchemy
         ### to recache after every delete which cause a 1-5 second lag for each delete
 
-        image_id_list = list()
-        for entry in old_images:
-            image_id_list.append(entry.id)
-
-        fits_id_list = list()
-        for entry in old_fits_images:
-            fits_id_list.append(entry.id)
-
-        raw_id_list = list()
-        for entry in old_raw_images:
-            raw_id_list.append(entry.id)
-
-        panorama_image_id_list = list()
-        for entry in old_panorama_images:
-            panorama_image_id_list.append(entry.id)
-
-
-        video_id_list = list()
-        for entry in old_videos:
-            video_id_list.append(entry.id)
-
-        mini_video_id_list = list()
-        for entry in old_mini_videos:
-            mini_video_id_list.append(entry.id)
-
-        keogram_id_list = list()
-        for entry in old_keograms:
-            keogram_id_list.append(entry.id)
-
-        startrail_image_id_list = list()
-        for entry in old_startrails:
-            startrail_image_id_list.append(entry.id)
-
-        startrail_video_id_list = list()
-        for entry in old_startrails_videos:
-            startrail_video_id_list.append(entry.id)
-
-        panorama_video_id_list = list()
-        for entry in old_panorama_videos:
-            panorama_video_id_list.append(entry.id)
-
-
-        logger.warning('Deleting...')
-        time.sleep(3)
-
 
         # catch signals to perform cleaner shutdown
         signal.signal(signal.SIGINT, self.sigint_handler_main)
 
-        delete_count = self._deleteAssets(IndiAllSkyDbImageTable, image_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbFitsImageTable, fits_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbRawImageTable, raw_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbPanoramaImageTable, panorama_image_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbVideoTable, video_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbMiniVideoTable, mini_video_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbKeogramTable, keogram_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbStarTrailsTable, startrail_image_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbStarTrailsVideoTable, startrail_video_id_list)
-        delete_count += self._deleteAssets(IndiAllSkyDbPanoramaVideoTable, panorama_video_id_list)
+
+
+        logger.warning('Deleting...')
+
+
+        asset_lists = [
+            (old_images, IndiAllSkyDbImageTable),
+            (old_panorama_images, IndiAllSkyDbPanoramaImageTable),
+            (old_fits_images, IndiAllSkyDbFitsImageTable),
+            (old_raw_images, IndiAllSkyDbRawImageTable),
+            (old_videos, IndiAllSkyDbVideoTable),
+            (old_mini_videos, IndiAllSkyDbMiniVideoTable),
+            (old_keograms, IndiAllSkyDbKeogramTable),
+            (old_startrails, IndiAllSkyDbStarTrailsTable),
+            (old_startrails_videos, IndiAllSkyDbStarTrailsVideoTable),
+            (old_panorama_videos, IndiAllSkyDbPanoramaVideoTable),
+        ]
+
+
+        delete_count = 0
+        for asset_list, asset_table in asset_lists:
+            while True:
+                id_list = [entry.id for entry in asset_list.limit(500)]
+
+                if not id_list:
+                    break
+
+                delete_count += self._deleteAssets(asset_table, id_list)
 
 
         # Remove empty folders
@@ -295,6 +304,20 @@ if __name__ == "__main__":
         default=10,
     )
     argparser.add_argument(
+        '--raw',
+        '-r',
+        help='RAW Images older than days will be deleted',
+        type=int,
+        default=10,
+    )
+    argparser.add_argument(
+        '--fits',
+        '-f',
+        help='FITS Images older than days will be deleted',
+        type=int,
+        default=10,
+    )
+    argparser.add_argument(
         '--timelapse_days',
         '-t',
         help='Videos older than days will be deleted',
@@ -308,6 +331,8 @@ if __name__ == "__main__":
 
     ei = ExpireImages()
     ei.image_days = args.days
+    ei.image_raw_days = args.raw
+    ei.image_fits_days = args.fits
     ei.video_days = args.timelapse_days
 
     ei.main()

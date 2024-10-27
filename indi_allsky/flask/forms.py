@@ -2602,8 +2602,10 @@ class IndiAllskyConfigForm(FlaskForm):
         ('libcamera_imx519', 'libcamera IMX519'),
         ('libcamera_imx585', 'libcamera IMX585'),
         ('libcamera_imx708', 'libcamera IMX708'),
+        ('libcamera_imx519', 'libcamera IMX519'),
         ('libcamera_imx462', 'libcamera IMX462'),
         ('libcamera_imx327', 'libcamera IMX327'),
+        ('libcamera_imx500_ai', 'libcamera IMX500 AI'),
         ('libcamera_imx296_gs', 'libcamera IMX296 GS'),
         ('libcamera_imx290', 'libcamera IMX290'),
         ('libcamera_imx298', 'libcamera IMX298'),
@@ -2896,6 +2898,7 @@ class IndiAllskyConfigForm(FlaskForm):
         ('cpads_temp_sensor_lm35_ads1015_i2c', 'LM35 ADS1015 i2c - Temp (1)'),
         ('cpads_temp_sensor_lm35_ads1115_i2c', 'LM35 ADS1115 i2c - Temp (1)'),
         ('blinka_temp_sensor_mlx90614_i2c', 'MLX90614 i2c - Temp/SkyTemp (2)'),
+        ('blinka_temp_sensor_mlx90640_i2c', 'MLX90640 i2c - SkyTemp (1)'),
         ('blinka_light_sensor_tsl2561_i2c', 'TSL2561 i2c - Lux/Full/IR (3)'),
         ('blinka_light_sensor_tsl2591_i2c', 'TSL2591 i2c - Lux/Vis/IR/Full (4)'),
         ('blinka_light_sensor_veml7700_i2c', 'VEML7700 i2c - Lux/Light/White (3)'),
@@ -2937,9 +2940,9 @@ class IndiAllskyConfigForm(FlaskForm):
         ('4', '(4) User Slot - Fan Level'),
         ('5', '(5) User Slot - Heat Index'),
         ('6', '(6) User Slot - Wind Dir (Degrees)'),
-        ('7', '(7) User Slot - SQM)'),
-        ('8', '(8) User Slot - Reserved'),
-        ('9', '(9) User Slot - Reserved'),
+        ('7', '(7) User Slot - SQM'),
+        ('8', 'User Slot - Future'),
+        ('9', 'User Slot - Future'),
         ('10', 'User Slot 10'),
         ('11', 'User Slot 11'),
         ('12', 'User Slot 12'),
@@ -2961,6 +2964,15 @@ class IndiAllskyConfigForm(FlaskForm):
         ('28', 'User Slot 28'),
         ('29', 'User Slot 29'),
         ('100', '(0) System Temp - Camera Temp'),
+        ('101', 'System Temp - Future'),
+        ('102', 'System Temp - Future'),
+        ('103', 'System Temp - Future'),
+        ('104', 'System Temp - Future'),
+        ('105', 'System Temp - Future'),
+        ('106', 'System Temp - Future'),
+        ('107', 'System Temp - Future'),
+        ('108', 'System Temp - Future'),
+        ('109', 'System Temp - Future'),
         ('110', 'System Temp 10'),
         ('111', 'System Temp 11'),
         ('112', 'System Temp 12'),
@@ -3120,6 +3132,7 @@ class IndiAllskyConfigForm(FlaskForm):
     LOCATION_ELEVATION               = IntegerField('Elevation', validators=[LOCATION_ELEVATION_validator])
     TIMELAPSE_ENABLE                 = BooleanField('Enable Timelapse Creation')
     TIMELAPSE_SKIP_FRAMES            = IntegerField('Timelapse Skip Frames', validators=[TIMELAPSE_SKIP_FRAMES_validator])
+    CAPTURE_PAUSE                    = BooleanField('Pause Capture')
     DAYTIME_CAPTURE                  = BooleanField('Daytime Capture')
     DAYTIME_CAPTURE_SAVE             = BooleanField('Daytime Save Images')
     DAYTIME_TIMELAPSE                = BooleanField('Daytime Timelapse')
@@ -3162,6 +3175,7 @@ class IndiAllskyConfigForm(FlaskForm):
     STARTRAILS_TIMELAPSE_MINFRAMES   = IntegerField('Star Trails Timelapse Minimum Frames', validators=[DataRequired(), STARTRAILS_TIMELAPSE_MINFRAMES_validator])
     STARTRAILS_USE_DB_DATA           = BooleanField('Star Trails Use Existing Data')
     IMAGE_CALIBRATE_DARK             = BooleanField('Apply Dark Calibration Frames')
+    IMAGE_CALIBRATE_BPM              = BooleanField('Apply Bad Pixel Map Frames')
     IMAGE_SAVE_FITS_PRE_DARK         = BooleanField('Save FITS Pre-Calibration')
     IMAGE_EXIF_PRIVACY               = BooleanField('Enable EXIF Privacy')
     IMAGE_FILE_TYPE                  = SelectField('Image file type', choices=IMAGE_FILE_TYPE_choices, validators=[DataRequired(), IMAGE_FILE_TYPE_validator])
@@ -3218,6 +3232,8 @@ class IndiAllskyConfigForm(FlaskForm):
     IMAGE_STACK_SPLIT                = BooleanField('Stack split screen')
     THUMBNAILS__IMAGES_AUTO          = BooleanField('Auto Generate Image Thumbnails')
     IMAGE_EXPIRE_DAYS                = IntegerField('Image expiration (days)', validators=[DataRequired(), IMAGE_EXPIRE_DAYS_validator])
+    IMAGE_RAW_EXPIRE_DAYS            = IntegerField('RAW Image expiration (days)', validators=[DataRequired(), IMAGE_EXPIRE_DAYS_validator])
+    IMAGE_FITS_EXPIRE_DAYS           = IntegerField('FITS Image expiration (days)', validators=[DataRequired(), IMAGE_EXPIRE_DAYS_validator])
     TIMELAPSE_EXPIRE_DAYS            = IntegerField('Timelapse expiration (days)', validators=[DataRequired(), TIMELAPSE_EXPIRE_DAYS_validator])
     TIMELAPSE_OVERWRITE              = BooleanField('Allow Overwrite Existing Timelapses')
     FFMPEG_FRAMERATE                 = IntegerField('FFMPEG Framerate', validators=[DataRequired(), FFMPEG_FRAMERATE_validator])
@@ -5665,6 +5681,7 @@ class IndiAllskyImageProcessingForm(FlaskForm):
     FRAME_TYPE                       = HiddenField('FRAME_TYPE', validators=[DataRequired()])
     FITS_ID                          = HiddenField('FITS ID', validators=[DataRequired()])
     IMAGE_CALIBRATE_DARK             = BooleanField('Dark Frame Calibration')
+    IMAGE_CALIBRATE_BPM              = BooleanField('Bad Pixel Map Calibration')
     CCD_BIT_DEPTH                    = SelectField('Camera Bit Depth', choices=IndiAllskyConfigForm.CCD_BIT_DEPTH_choices, validators=[CCD_BIT_DEPTH_validator])
     NIGHT_CONTRAST_ENHANCE           = BooleanField('Contrast Enhance')
     CONTRAST_ENHANCE_16BIT           = BooleanField('16-bit Contrast Enhance')
