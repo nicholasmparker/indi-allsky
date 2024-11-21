@@ -6,6 +6,8 @@ indi-allsky is software used to manage a Linux-based All Sky Camera using the IN
 
 
 ## New Features
+* Moon Overlay
+    * Realtime accurate representation of illumination of the moon
 * Satellite Tracking
 * ADS-B Aircraft Tracking
     * Use a SDR to tag aircraft that appear in your camera
@@ -74,6 +76,7 @@ indi-allsky is software used to manage a Linux-based All Sky Camera using the IN
         * IMX378
         * Camera Module v3 (IMX708)
         * AI Camera (IMX500)
+        * IMX283 Klarity/OneInchEye
         * IMX519
         * IMX585
         * IMX462
@@ -138,7 +141,7 @@ https://github.com/aaronwmorris/indi-allsky/wiki/FAQ
 | Distribution                   | Arch           | Note |
 | ------------------------------ | -------------- | ---- |
 | **Raspberry Pi OS 12 (bookworm)**  | **aarch64 (64-bit)** | **RECOMMENDED**<br>Compile INDI with build_indi.sh<br>Use libcamera or [indi_pylibcamera](https://github.com/scriptorron/indi_pylibcamera) for Raspberry PI HQ camera |
-| Raspberry Pi OS 12             | armhf (32-bit) | (DO NOT USE) WARNING: Currently has package dependency problems, please use 64-bit |
+| Raspberry Pi OS 12             | armhf (32-bit) | (NOT RECOMMENDED) Some python modules do not have armhf wheels and must be compiled from source.  This will take a few hours. |
 | Raspberry Pi OS 11 (bullseye)  | aarch64/armhf  | Compile INDI with build_indi.sh |
 | Raspberry Pi OS 10 (buster)    | armhf          | (NOT RECOMMENDED) Compile INDI with build_indi.sh |
 | Debian 12 (bookworm)           | x86_64         | Compile INDI with build_indi.sh |

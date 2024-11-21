@@ -45,6 +45,8 @@ class IndiAllSkyConfigBase(object):
         "LENS_FOCAL_LENGTH" : 2.5,
         "LENS_FOCAL_RATIO"  : 2.0,
         "LENS_IMAGE_CIRCLE" : 4000,
+        "LENS_OFFSET_X"     : 0,
+        "LENS_OFFSET_Y"     : 0,
         "LENS_ALTITUDE"     : 90.0,
         "LENS_AZIMUTH"      : 0.0,
         "CCD_CONFIG" : {
@@ -87,6 +89,7 @@ class IndiAllSkyConfigBase(object):
         "CCD_TEMP"         : 15.0,
         "TEMP_DISPLAY"     : "c",  # c = celcius, f = fahrenheit, k = kelvin",
         "PRESSURE_DISPLAY" : "hPa",  # hPa = hectoPascals/millibars, psi = psi, inHg = inches of mercury, mmHg = mm of mercury
+        "WINDSPEED_DISPLAY": "ms",  # ms = meters/s, mph = miles/hour, knots = knots, kmh = km/hour
         "CCD_TEMP_SCRIPT"  : "",
         "GPS_ENABLE"       : False,
         "TARGET_ADU"         : 75,
@@ -110,6 +113,12 @@ class IndiAllSkyConfigBase(object):
         "CAPTURE_PAUSE"            : False,
         "TIMELAPSE_ENABLE"         : True,
         "TIMELAPSE_SKIP_FRAMES"    : 4,
+        "TIMELAPSE" : {
+            "PRE_PROCESSOR"  : "standard",
+            "IMAGE_CIRCLE"   : 2000,
+            "KEOGRAM_RATIO"  : 0.15,
+            "PRE_SCALE"      : 100,
+        },
         "DAYTIME_CAPTURE"          : True,
         "DAYTIME_CAPTURE_SAVE"     : True,
         "DAYTIME_TIMELAPSE"        : True,
@@ -178,6 +187,13 @@ class IndiAllSkyConfigBase(object):
         "IMAGE_SCALE"      : 100,
         "NIGHT_GRAYSCALE"  : False,
         "DAYTIME_GRAYSCALE": False,
+        "MOON_OVERLAY" : {
+            "ENABLE"   : False,
+            "X"        : 200,
+            "Y"        : 200,
+            "SCALE"    : 0.5,
+            "DARK_SIDE_SCALE" : 0.4,
+        },
         "IMAGE_CIRCLE_MASK" : {
             "ENABLE"   : False,
             "DIAMETER" : 1500,

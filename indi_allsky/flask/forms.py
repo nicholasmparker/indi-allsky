@@ -162,6 +162,11 @@ def LENS_IMAGE_CIRCLE_validator(form, field):
         raise ValidationError('Focal ratio must be greater than 0')
 
 
+def LENS_OFFSET_validator(form, field):
+    if not isinstance(field.data, int):
+        raise ValidationError('Please enter valid number')
+
+
 def LENS_ALTITUDE_validator(form, field):
     if not isinstance(field.data, (int, float)):
         raise ValidationError('Please enter valid number')
@@ -257,6 +262,38 @@ def TIMELAPSE_SKIP_FRAMES_validator(form, field):
         raise ValidationError('Skip frames must 10 or less')
 
 
+def TIMELAPSE__PRE_PROCESSOR_validator(form, field):
+    if field.data not in list(zip(*form.TIMELAPSE__PRE_PROCESSOR_choices))[0]:
+        raise ValidationError('Invalid selection')
+
+
+def TIMELAPSE__IMAGE_CIRCLE_validator(form, field):
+    if not isinstance(field.data, int):
+        raise ValidationError('Please enter valid number')
+
+    if field.data < 100:
+        raise ValidationError('Diameter must be 100 or greater')
+
+
+def TIMELAPSE__KEOGRAM_RATIO_validator(form, field):
+    if not isinstance(field.data, float):
+        raise ValidationError('Please enter valid number')
+
+    if field.data < 0.01:
+        raise ValidationError('Ratio must be 0.01 or greater')
+
+    if field.data > 0.33:
+        raise ValidationError('Ratio must be 0.33 or less')
+
+
+def TIMELAPSE__PRE_SCALE_validator(form, field):
+    if field.data <= 0:
+        raise ValidationError('Pre-Scaling factor must be greater than 0')
+
+    if field.data > 100:
+        raise ValidationError('Pre-Scaling factor must be 100 or less')
+
+
 def CCD_BIT_DEPTH_validator(form, field):
     if int(field.data) not in (0, 8, 10, 12, 14, 16):
         raise ValidationError('Bits must be 0, 8, 10, 12, 14, or 16 ')
@@ -319,13 +356,18 @@ def SCNR_ALGORITHM_validator(form, field):
 
 
 def TEMP_DISPLAY_validator(form, field):
-    if field.data not in ('c', 'f', 'k'):
+    if field.data not in list(zip(*form.TEMP_DISPLAY_choices))[0]:
         raise ValidationError('Please select the temperature system for display')
 
 
 def PRESSURE_DISPLAY_validator(form, field):
-    if field.data not in ('hPa', 'psi', 'inHg', 'mmHg'):
+    if field.data not in list(zip(*form.PRESSURE_DISPLAY_choices))[0]:
         raise ValidationError('Please select the pressure system for display')
+
+
+def WINDSPEED_DISPLAY_validator(form, field):
+    if field.data not in list(zip(*form.WINDSPEED_DISPLAY_choices))[0]:
+        raise ValidationError('Please select the wind speed system for display')
 
 
 def CCD_TEMP_SCRIPT_validator(form, field):
@@ -1327,8 +1369,8 @@ def FFMPEG_FRAMERATE_validator(form, field):
     if field.data < 10:
         raise ValidationError('FFMPEG frame rate must be 10 or greater')
 
-    if field.data > 50:
-        raise ValidationError('FFMPEG frame rate must be 50 or less')
+    if field.data > 60:
+        raise ValidationError('FFMPEG frame rate must be 60 or less')
 
 
 def FFMPEG_BITRATE_validator(form, field):
@@ -1427,6 +1469,38 @@ def TEXT_PROPERTIES__PIL_FONT_SIZE_validator(form, field):
 
     if field.data < 10:
         raise ValidationError('Size must be 10 or greater')
+
+
+def MOON_OVERLAY__X_validator(form, field):
+    if not isinstance(field.data, int):
+        raise ValidationError('Please enter valid number')
+
+
+def MOON_OVERLAY__Y_validator(form, field):
+    if not isinstance(field.data, int):
+        raise ValidationError('Please enter valid number')
+
+
+def MOON_OVERLAY__SCALE_validator(form, field):
+    if not isinstance(field.data, (int, float)):
+        raise ValidationError('Please enter valid number')
+
+    if field.data < 0.1:
+        raise ValidationError('Image scale must be 0.1 or more')
+
+    if field.data > 2.0:
+        raise ValidationError('Image scale must be 2.0 or less')
+
+
+def MOON_OVERLAY__DARK_SIDE_SCALE_validator(form, field):
+    if not isinstance(field.data, (int, float)):
+        raise ValidationError('Please enter valid number')
+
+    if field.data < 0.0:
+        raise ValidationError('Dark side scale must be 0.0 or more')
+
+    if field.data > 0.9:
+        raise ValidationError('Dark side scale must 0.9 or less')
 
 
 def CARDINAL_DIRS__CHAR_validator(form, field):
@@ -2606,6 +2680,7 @@ class IndiAllskyConfigForm(FlaskForm):
         ('libcamera_imx462', 'libcamera IMX462'),
         ('libcamera_imx327', 'libcamera IMX327'),
         ('libcamera_imx500_ai', 'libcamera IMX500 AI'),
+        ('libcamera_imx283', 'libcamera IMX283 Klarity/OneInchEye'),
         ('libcamera_imx296_gs', 'libcamera IMX296 GS'),
         ('libcamera_imx290', 'libcamera IMX290'),
         ('libcamera_imx298', 'libcamera IMX298'),
@@ -2638,6 +2713,13 @@ class IndiAllskyConfigForm(FlaskForm):
         ('psi', 'PSI'),
         ('inHg', 'Inches of Mercury (inHg)'),
         ('mmHg', 'Millimeters of Mercury (mmHg)'),
+    )
+
+    WINDSPEED_DISPLAY_choices = (
+        ('ms', 'Meters/second (m/s)'),
+        ('knots', 'Knots'),
+        ('mph', 'Miles/hour (mph)'),
+        ('kph', 'Kilometers/hour (kph)'),
     )
 
     IMAGE_FILE_TYPE_choices = (
@@ -2707,18 +2789,30 @@ class IndiAllskyConfigForm(FlaskForm):
 
     FFMPEG_VFSCALE_choices = (
         ('', 'None'),
-        ('-1:2304', 'V 2304px (imx477)'),
-        ('-1:1520', 'V 1520px (imx477)'),
-        ('-1:760', 'V 760px (imx477)'),
         ('iw*.75:ih*.75', '75%'),
         ('iw*.5:ih*.5', '50%'),
         ('iw*.25:ih*.25', '25%'),
+        ('-1:2304', 'V 2304px (imx477)'),
+        ('-1:1520', 'V 1520px (imx477)'),
+        ('-1:760', 'V 760px (imx477)'),
     )
 
     FFMPEG_CODEC_choices = (
         ('libx264', 'x264'),
-        ('libvpx', 'webm')
+        ('libvpx', 'webm'),
+        ('h264_v4l2m2m', 'h264 (v4l2m2m) - Raspberry Pi'),
+        ('h264_qsv', 'h264 (QSV) - Intel Quick Sync Video'),
+        ('h264_omx', 'h264 (OMX) - Raspberry Pi (32-bit only)'),
+        ('libx265', 'x265 hevc - DO NOT USE'),
+        ('hevc_v4l2m2m', 'h265 hevc (v4l2m2m) - DO NOT USE'),
     )
+
+
+    TIMELAPSE__PRE_PROCESSOR_choices = (
+        ('standard', 'Standard - No Processing'),
+        ('wrap_keogram', 'Wrap Keogram Around Image Circle'),
+    )
+
 
     ORB_PROPERTIES__MODE_choices = (
         ('ha', 'Local Hour Angle'),
@@ -2797,6 +2891,7 @@ class IndiAllskyConfigForm(FlaskForm):
 
     S3UPLOAD__CLASSNAME_choices = (
         ('boto3_s3', 'AWS S3 (boto3)'),
+        ('boto3_minio', 'Minio (boto3)'),
         ('libcloud_s3', 'Apache Libcloud (AWS)'),
         ('gcp_storage', 'Google Cloud Storage'),
         ('oci_storage', 'Oracle OCI Storage'),
@@ -3074,6 +3169,8 @@ class IndiAllskyConfigForm(FlaskForm):
     LENS_FOCAL_LENGTH                = FloatField('Focal Length', validators=[LENS_FOCAL_LENGTH_validator])
     LENS_FOCAL_RATIO                 = FloatField('Focal Ratio', validators=[LENS_FOCAL_RATIO_validator])
     LENS_IMAGE_CIRCLE                = IntegerField('Image Circle', validators=[LENS_IMAGE_CIRCLE_validator])
+    LENS_OFFSET_X                    = IntegerField('X Offset', validators=[LENS_OFFSET_validator])
+    LENS_OFFSET_Y                    = IntegerField('Y Offset', validators=[LENS_OFFSET_validator])
     LENS_ALTITUDE                    = FloatField('Altitude', validators=[LENS_ALTITUDE_validator])
     LENS_AZIMUTH                     = FloatField('Azimuth', validators=[LENS_AZIMUTH_validator])
     CCD_CONFIG__NIGHT__GAIN          = IntegerField('Night Gain', validators=[ccd_GAIN_validator])
@@ -3102,6 +3199,7 @@ class IndiAllskyConfigForm(FlaskForm):
     CCD_TEMP                         = FloatField('Target CCD Temp', validators=[CCD_TEMP_validator])
     TEMP_DISPLAY                     = SelectField('Temperature Display', choices=TEMP_DISPLAY_choices, validators=[DataRequired(), TEMP_DISPLAY_validator])
     PRESSURE_DISPLAY                 = SelectField('Pressure Display', choices=PRESSURE_DISPLAY_choices, validators=[DataRequired(), PRESSURE_DISPLAY_validator])
+    WINDSPEED_DISPLAY                = SelectField('Wind Speed Display', choices=WINDSPEED_DISPLAY_choices, validators=[DataRequired(), WINDSPEED_DISPLAY_validator])
     CCD_TEMP_SCRIPT                  = StringField('External Temperature Script', validators=[CCD_TEMP_SCRIPT_validator])
     GPS_ENABLE                       = BooleanField('GPS Enable')
     TARGET_ADU                       = IntegerField('Target ADU (night)', validators=[DataRequired(), TARGET_ADU_validator])
@@ -3132,6 +3230,10 @@ class IndiAllskyConfigForm(FlaskForm):
     LOCATION_ELEVATION               = IntegerField('Elevation', validators=[LOCATION_ELEVATION_validator])
     TIMELAPSE_ENABLE                 = BooleanField('Enable Timelapse Creation')
     TIMELAPSE_SKIP_FRAMES            = IntegerField('Timelapse Skip Frames', validators=[TIMELAPSE_SKIP_FRAMES_validator])
+    TIMELAPSE__PRE_PROCESSOR         = SelectField('Timelapse Processing', choices=TIMELAPSE__PRE_PROCESSOR_choices, validators=[TIMELAPSE__PRE_PROCESSOR_validator])
+    TIMELAPSE__IMAGE_CIRCLE          = IntegerField('Image Circle Diameter', validators=[DataRequired(), TIMELAPSE__IMAGE_CIRCLE_validator])
+    TIMELAPSE__KEOGRAM_RATIO         = FloatField('Keogram Ratio', validators=[DataRequired(), TIMELAPSE__KEOGRAM_RATIO_validator])
+    TIMELAPSE__PRE_SCALE             = IntegerField('Pre-Scale Images', validators=[DataRequired(), TIMELAPSE__PRE_SCALE_validator])
     CAPTURE_PAUSE                    = BooleanField('Pause Capture')
     DAYTIME_CAPTURE                  = BooleanField('Daytime Capture')
     DAYTIME_CAPTURE_SAVE             = BooleanField('Daytime Save Images')
@@ -3192,8 +3294,8 @@ class IndiAllskyConfigForm(FlaskForm):
     IMAGE_SCALE                      = IntegerField('Image Scaling', validators=[DataRequired(), IMAGE_SCALE_validator])
     IMAGE_CIRCLE_MASK__ENABLE        = BooleanField('Enable Image Circle Mask')
     IMAGE_CIRCLE_MASK__DIAMETER      = IntegerField('Mask Diameter', validators=[DataRequired(), IMAGE_CIRCLE_MASK__DIAMETER_validator])
-    IMAGE_CIRCLE_MASK__OFFSET_X      = IntegerField('Mask X Offset', validators=[IMAGE_CIRCLE_MASK__OFFSET_X_validator])
-    IMAGE_CIRCLE_MASK__OFFSET_Y      = IntegerField('Mask Y Offset', validators=[IMAGE_CIRCLE_MASK__OFFSET_Y_validator])
+    IMAGE_CIRCLE_MASK__OFFSET_X      = IntegerField('Mask X Offset', validators=[IMAGE_CIRCLE_MASK__OFFSET_X_validator], render_kw={'readonly' : True, 'disabled' : 'disabled'})
+    IMAGE_CIRCLE_MASK__OFFSET_Y      = IntegerField('Mask Y Offset', validators=[IMAGE_CIRCLE_MASK__OFFSET_Y_validator], render_kw={'readonly' : True, 'disabled' : 'disabled'})
     IMAGE_CIRCLE_MASK__BLUR          = IntegerField('Mask Blur', validators=[IMAGE_CIRCLE_MASK__BLUR_validator])
     IMAGE_CIRCLE_MASK__OPACITY       = IntegerField('Mask Opacity %', validators=[IMAGE_CIRCLE_MASK__OPACITY_validator])
     IMAGE_CIRCLE_MASK__OUTLINE       = BooleanField('Mask Outline')
@@ -3206,8 +3308,8 @@ class IndiAllskyConfigForm(FlaskForm):
     IMAGE_QUEUE_BACKOFF              = FloatField('Image Queue Backoff Multiplier', validators=[IMAGE_QUEUE_BACKOFF_validator])
     FISH2PANO__ENABLE                = BooleanField('Enable Fisheye to Panoramic')
     FISH2PANO__DIAMETER              = IntegerField('Diameter', validators=[DataRequired(), FISH2PANO__DIAMETER_validator])
-    FISH2PANO__OFFSET_X              = IntegerField('X Offset', validators=[FISH2PANO__OFFSET_X_validator])
-    FISH2PANO__OFFSET_Y              = IntegerField('Y Offset', validators=[FISH2PANO__OFFSET_Y_validator])
+    FISH2PANO__OFFSET_X              = IntegerField('X Offset', validators=[FISH2PANO__OFFSET_X_validator], render_kw={'readonly' : True, 'disabled' : 'disabled'})
+    FISH2PANO__OFFSET_Y              = IntegerField('Y Offset', validators=[FISH2PANO__OFFSET_Y_validator], render_kw={'readonly' : True, 'disabled' : 'disabled'})
     FISH2PANO__ROTATE_ANGLE          = IntegerField('Rotation Angle', validators=[FISH2PANO__ROTATE_ANGLE_validator])
     FISH2PANO__SCALE                 = FloatField('Scale', validators=[FISH2PANO__SCALE_validator])
     FISH2PANO__MODULUS               = IntegerField('Modulus', validators=[DataRequired(), FISH2PANO__MODULUS_validator])
@@ -3219,6 +3321,11 @@ class IndiAllskyConfigForm(FlaskForm):
     IMAGE_SAVE_FITS                  = BooleanField('Save FITS data')
     NIGHT_GRAYSCALE                  = BooleanField('Save in Grayscale at Night')
     DAYTIME_GRAYSCALE                = BooleanField('Save in Grayscale during Day')
+    MOON_OVERLAY__ENABLE             = BooleanField('Enable Moon Overlay')
+    MOON_OVERLAY__X                  = IntegerField('X', validators=[MOON_OVERLAY__X_validator])
+    MOON_OVERLAY__Y                  = IntegerField('Y', validators=[MOON_OVERLAY__Y_validator])
+    MOON_OVERLAY__SCALE              = FloatField('Overlay Scale', validators=[DataRequired(), MOON_OVERLAY__SCALE_validator])
+    MOON_OVERLAY__DARK_SIDE_SCALE    = FloatField('Dark Side Brightness', validators=[MOON_OVERLAY__DARK_SIDE_SCALE_validator])
     IMAGE_EXPORT_RAW                 = SelectField('Export RAW image type', choices=IMAGE_EXPORT_RAW_choices, validators=[IMAGE_EXPORT_RAW_validator])
     IMAGE_EXPORT_FOLDER              = StringField('Export RAW folder', validators=[DataRequired(), IMAGE_EXPORT_FOLDER_validator])
     IMAGE_EXPORT_FLIP_V              = BooleanField('Flip RAW Vertically')
@@ -3263,8 +3370,8 @@ class IndiAllskyConfigForm(FlaskForm):
     CARDINAL_DIRS__CHAR_WEST         = StringField('West Character', validators=[CARDINAL_DIRS__CHAR_validator])
     CARDINAL_DIRS__CHAR_SOUTH        = StringField('South Character', validators=[CARDINAL_DIRS__CHAR_validator])
     CARDINAL_DIRS__DIAMETER          = IntegerField('Image Circle Diameter', validators=[CARDINAL_DIRS__DIAMETER_validator])
-    CARDINAL_DIRS__OFFSET_X          = IntegerField('X Offset', validators=[CARDINAL_DIRS__CENTER_OFFSET_validator])
-    CARDINAL_DIRS__OFFSET_Y          = IntegerField('Y Offset', validators=[CARDINAL_DIRS__CENTER_OFFSET_validator])
+    CARDINAL_DIRS__OFFSET_X          = IntegerField('X Offset', validators=[CARDINAL_DIRS__CENTER_OFFSET_validator], render_kw={'readonly' : True, 'disabled' : 'disabled'})
+    CARDINAL_DIRS__OFFSET_Y          = IntegerField('Y Offset', validators=[CARDINAL_DIRS__CENTER_OFFSET_validator], render_kw={'readonly' : True, 'disabled' : 'disabled'})
     CARDINAL_DIRS__OFFSET_TOP        = IntegerField('Top Offset', validators=[CARDINAL_DIRS__SIDE_OFFSET_validator])
     CARDINAL_DIRS__OFFSET_LEFT       = IntegerField('Left Offset', validators=[CARDINAL_DIRS__SIDE_OFFSET_validator])
     CARDINAL_DIRS__OFFSET_RIGHT      = IntegerField('Right Offset', validators=[CARDINAL_DIRS__SIDE_OFFSET_validator])
@@ -3670,6 +3777,10 @@ class IndiAllskyConfigForm(FlaskForm):
                         self.FOCUSER__GPIO_PIN_4.errors.append('PIN must be defined')
                         result = False
 
+                except NotImplementedError:
+                    self.FOCUSER__CLASSNAME.errors.append('System not suppored by Adafruit Blinka module')
+                    result = False
+
                 except ImportError:
                     self.FOCUSER__CLASSNAME.errors.append('GPIO python modules not installed')
                     result = False
@@ -3697,6 +3808,10 @@ class IndiAllskyConfigForm(FlaskForm):
                     else:
                         self.DEW_HEATER__PIN_1.errors.append('PIN must be defined')
                         result = False
+
+                except NotImplementedError:
+                    self.FOCUSER__CLASSNAME.errors.append('System not suppored by Adafruit Blinka module')
+                    result = False
 
                 except ImportError:
                     self.DEW_HEATER__CLASSNAME.errors.append('GPIO python modules not installed')
@@ -3734,6 +3849,10 @@ class IndiAllskyConfigForm(FlaskForm):
                         self.FAN__PIN_1.errors.append('PIN must be defined')
                         result = False
 
+                except NotImplementedError:
+                    self.FOCUSER__CLASSNAME.errors.append('System not suppored by Adafruit Blinka module')
+                    result = False
+
                 except ImportError:
                     self.FAN__CLASSNAME.errors.append('GPIO python modules not installed')
                     result = False
@@ -3759,6 +3878,10 @@ class IndiAllskyConfigForm(FlaskForm):
                         self.GENERIC_GPIO__A_PIN_1.errors.append('PIN must be defined')
                         result = False
 
+                except NotImplementedError:
+                    self.FOCUSER__CLASSNAME.errors.append('System not suppored by Adafruit Blinka module')
+                    result = False
+
                 except ImportError:
                     self.GENERIC_GPIO__A_CLASSNAME.errors.append('GPIO python modules not installed')
                     result = False
@@ -3783,6 +3906,10 @@ class IndiAllskyConfigForm(FlaskForm):
                     else:
                         self.TEMP_SENSOR__A_PIN_1.errors.append('PIN must be defined')
                         result = False
+
+                except NotImplementedError:
+                    self.FOCUSER__CLASSNAME.errors.append('System not suppored by Adafruit Blinka module')
+                    result = False
 
                 except ImportError:
                     self.TEMP_SENSOR__A_CLASSNAME.errors.append('GPIO python modules not installed')
@@ -3827,6 +3954,10 @@ class IndiAllskyConfigForm(FlaskForm):
                         self.TEMP_SENSOR__B_PIN_1.errors.append('PIN must be defined')
                         result = False
 
+                except NotImplementedError:
+                    self.FOCUSER__CLASSNAME.errors.append('System not suppored by Adafruit Blinka module')
+                    result = False
+
                 except ImportError:
                     self.TEMP_SENSOR__B_CLASSNAME.errors.append('GPIO python modules not installed')
                     result = False
@@ -3869,6 +4000,10 @@ class IndiAllskyConfigForm(FlaskForm):
                     else:
                         self.TEMP_SENSOR__C_PIN_1.errors.append('PIN must be defined')
                         result = False
+
+                except NotImplementedError:
+                    self.FOCUSER__CLASSNAME.errors.append('System not suppored by Adafruit Blinka module')
+                    result = False
 
                 except ImportError:
                     self.TEMP_SENSOR__C_CLASSNAME.errors.append('GPIO python modules not installed')
@@ -5680,6 +5815,8 @@ class IndiAllskyImageProcessingForm(FlaskForm):
     CAMERA_ID                        = HiddenField('Camera ID', validators=[DataRequired()])
     FRAME_TYPE                       = HiddenField('FRAME_TYPE', validators=[DataRequired()])
     FITS_ID                          = HiddenField('FITS ID', validators=[DataRequired()])
+    LENS_OFFSET_X                    = IntegerField('Lens X Offset', validators=[LENS_OFFSET_validator])
+    LENS_OFFSET_Y                    = IntegerField('Lens Y Offset', validators=[LENS_OFFSET_validator])
     IMAGE_CALIBRATE_DARK             = BooleanField('Dark Frame Calibration')
     IMAGE_CALIBRATE_BPM              = BooleanField('Bad Pixel Map Calibration')
     CCD_BIT_DEPTH                    = SelectField('Camera Bit Depth', choices=IndiAllskyConfigForm.CCD_BIT_DEPTH_choices, validators=[CCD_BIT_DEPTH_validator])
@@ -5719,8 +5856,6 @@ class IndiAllskyImageProcessingForm(FlaskForm):
     IMAGE_ALIGN_SOURCEMINAREA        = IntegerField('Minimum point area', validators=[DataRequired(), IMAGE_ALIGN_SOURCEMINAREA_validator])
     FISH2PANO__ENABLE                = BooleanField('Fisheye to Panoramic')
     FISH2PANO__DIAMETER              = IntegerField('Diameter', validators=[DataRequired(), FISH2PANO__DIAMETER_validator])
-    FISH2PANO__OFFSET_X              = IntegerField('X Offset', validators=[FISH2PANO__OFFSET_X_validator])
-    FISH2PANO__OFFSET_Y              = IntegerField('Y Offset', validators=[FISH2PANO__OFFSET_Y_validator])
     FISH2PANO__ROTATE_ANGLE          = IntegerField('Rotation Angle', validators=[FISH2PANO__ROTATE_ANGLE_validator])
     FISH2PANO__SCALE                 = FloatField('Scale', validators=[FISH2PANO__SCALE_validator])
     FISH2PANO__FLIP_H                = BooleanField('Flip Horizontally')
@@ -5784,6 +5919,7 @@ class IndiAllskyCameraSimulatorForm(FlaskForm):
         'Medium - 6mm Class' : (
             ('ar0130', 'ASI120 - 1/3" - AR0130CS'),
             ('imx224', 'IMX224 - 1/3"'),
+            ('imx225', 'IMX225 - 1/3"'),
             ('imx273', 'IMX273 - 1/2.9"'),
             ('imx287', 'IMX287 - 1/2.9"'),
             ('imx290', 'IMX290 - 1/2.8"'),

@@ -31,6 +31,7 @@ from .scnr import IndiAllskyScnr
 from .stack import IndiAllskyStacker
 from .cardinalDirsLabel import IndiAllskyCardinalDirsLabel
 from .utils import IndiAllSkyDateCalcs
+from .moonOverlay import IndiAllSkyMoonOverlay
 
 from .flask.models import IndiAllSkyDbBadPixelMapTable
 from .flask.models import IndiAllSkyDbDarkFrameTable
@@ -163,6 +164,7 @@ class ImageProcessor(object):
         self._draw = IndiAllSkyDraw(self.config, self.bin_v, mask=self._detection_mask)
         self._scnr = IndiAllskyScnr(self.config)
         self._cardinal_dirs_label = IndiAllskyCardinalDirsLabel(self.config)
+        self._moon_overlay = IndiAllSkyMoonOverlay(self.config)
 
         self._orb = IndiAllskyOrbGenerator(self.config)
         self._orb.sun_alt_deg = self.config['NIGHT_SUN_ALT_DEG']
@@ -1111,8 +1113,8 @@ class ImageProcessor(object):
     #    # not used
     #    dtype = self.image.dtype
 
-    #    self.image[:, :, 2] = self.image[:, :, 2].astype(numpy.float16) * float(libcamera_awb_gains[0])  # red
-    #    self.image[:, :, 0] = self.image[:, :, 0].astype(numpy.float16) * float(libcamera_awb_gains[1])  # blue
+    #    self.image[:, :, 2] = self.image[:, :, 2].astype(numpy.float32) * float(libcamera_awb_gains[0])  # red
+    #    self.image[:, :, 0] = self.image[:, :, 0].astype(numpy.float32) * float(libcamera_awb_gains[1])  # blue
 
     #    self.image = self.image.astype(dtype)
 
@@ -1532,8 +1534,8 @@ class ImageProcessor(object):
         if self.config.get('IMAGE_CIRCLE_MASK', {}).get('OUTLINE'):
             image_height, image_width = self.image.shape[:2]
 
-            center_x = int(image_width / 2) + self.config['IMAGE_CIRCLE_MASK']['OFFSET_X']
-            center_y = int(image_height / 2) - self.config['IMAGE_CIRCLE_MASK']['OFFSET_Y']  # minus
+            center_x = int(image_width / 2) + self.config.get('LENS_OFFSET_X', 0)
+            center_y = int(image_height / 2) - self.config.get('LENS_OFFSET_Y', 0)  # minus
             radius = int(self.config['IMAGE_CIRCLE_MASK']['DIAMETER'] / 2)
 
             cv2.circle(
@@ -1700,6 +1702,11 @@ class ImageProcessor(object):
         moon_alt = math.degrees(moon.alt)
         self.astrometric_data['moon_alt'] = moon_alt
         self.astrometric_data['moon_phase'] = moon.moon_phase * 100.0
+
+        sun_lon = ephem.Ecliptic(sun).lon
+        moon_lon = ephem.Ecliptic(moon).lon
+        sm_angle = (moon_lon - sun_lon) % math.tau
+        self.astrometric_data['moon_cycle'] = (sm_angle / math.tau) * 100
 
         if moon_alt >= 0:
             self.astrometric_data['moon_up'] = 'Yes'
@@ -1912,6 +1919,7 @@ class ImageProcessor(object):
             'sun_alt'      : self.astrometric_data['sun_alt'],
             'moon_alt'     : self.astrometric_data['moon_alt'],
             'moon_phase'   : self.astrometric_data['moon_phase'],
+            'moon_cycle'   : self.astrometric_data['moon_cycle'],
             'moon_up'      : self.astrometric_data['moon_up'],
             'sun_moon_sep' : self.astrometric_data['sun_moon_sep'],
             'mercury_alt'  : self.astrometric_data['mercury_alt'],
@@ -2042,6 +2050,15 @@ class ImageProcessor(object):
             image_label += '\n* SOLAR ECLIPSE *'
 
 
+        # add extra text to image
+        extra_text_lines = self.get_extra_text()
+        if extra_text_lines:
+            logger.info('Adding extra text from %s', self.config['IMAGE_EXTRA_TEXT'])
+
+            for line in extra_text_lines:
+                image_label += '\n{0:s}'.format(line)
+
+
         # aircraft lines
         adsb_aircraft_lines = self.get_adsb_aircraft_text(adsb_aircraft_list)
         if adsb_aircraft_lines:
@@ -2057,15 +2074,6 @@ class ImageProcessor(object):
             logger.info('Adding satellite text')
 
             for line in satellite_tracking_lines:
-                image_label += '\n{0:s}'.format(line)
-
-
-        # add extra text to image
-        extra_text_lines = self.get_extra_text()
-        if extra_text_lines:
-            logger.info('Adding extra text from %s', self.config['IMAGE_EXTRA_TEXT'])
-
-            for line in extra_text_lines:
                 image_label += '\n{0:s}'.format(line)
 
 
@@ -2640,8 +2648,8 @@ class ImageProcessor(object):
 
         rot_height, rot_width = rotated_image.shape[:2]
 
-        x_offset = self.config.get('FISH2PANO', {}).get('OFFSET_X', 0)
-        y_offset = self.config.get('FISH2PANO', {}).get('OFFSET_Y', 0)
+        x_offset = self.config.get('LENS_OFFSET_X', 0)
+        y_offset = self.config.get('LENS_OFFSET_Y', 0)
         center_x = int(rot_width / 2) + x_offset
         center_y = int(rot_height / 2) - y_offset  # note minus for y
 
@@ -2723,8 +2731,8 @@ class ImageProcessor(object):
 
         rot_height, rot_width = rotated_image.shape[:2]
 
-        x_offset = self.config.get('FISH2PANO', {}).get('OFFSET_X', 0)
-        y_offset = self.config.get('FISH2PANO', {}).get('OFFSET_Y', 0)
+        x_offset = self.config.get('LENS_OFFSET_X', 0)
+        y_offset = self.config.get('LENS_OFFSET_Y', 0)
         center_x = int(rot_width / 2) + x_offset
         center_y = int(rot_height / 2) - y_offset  # note minus for y
 
@@ -2767,6 +2775,13 @@ class ImageProcessor(object):
             return pano_data
 
         return self._cardinal_dirs_label.panorama_label(pano_data)
+
+
+    def moon_overlay(self):
+        if not self.config.get('MOON_OVERLAY', {}).get('ENABLE'):
+            return
+
+        self._moon_overlay.apply(self.image, self.astrometric_data['moon_cycle'], self.astrometric_data['moon_phase'])
 
 
     def _load_detection_mask(self):
@@ -2912,8 +2927,8 @@ class ImageProcessor(object):
 
         channel_mask = numpy.full([image_height, image_width], background, dtype=numpy.uint8)
 
-        center_x = int(image_width / 2) + self.config['IMAGE_CIRCLE_MASK']['OFFSET_X']
-        center_y = int(image_height / 2) - self.config['IMAGE_CIRCLE_MASK']['OFFSET_Y']  # minus
+        center_x = int(image_width / 2) + self.config.get('LENS_OFFSET_X', 0)
+        center_y = int(image_height / 2) - self.config.get('LENS_OFFSET_Y', 0)  # minus
         radius = int(self.config['IMAGE_CIRCLE_MASK']['DIAMETER'] / 2)
         blur = self.config['IMAGE_CIRCLE_MASK']['BLUR']
 

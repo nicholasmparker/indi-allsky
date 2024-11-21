@@ -300,7 +300,11 @@ while [ -z "${CAMERA_INTERFACE:-}" ]; do
 
         echo
         PS3="Select a libcamera interface: "
-        select libcamera_interface in libcamera_imx477 libcamera_imx378 libcamera_ov5647 libcamera_imx219 libcamera_imx519 libcamera_imx585 libcamera_imx708 libcamera_imx296_gs libcamera_imx290 libcamera_imx462 libcamera_imx327 libcamera_imx298 libcamera_64mp_hawkeye libcamera_64mp_owlsight; do
+<<<<<<< HEAD
+        select libcamera_interface in libcamera_imx477 libcamera_imx378 libcamera_imx708 libcamera_imx519 libcamera_imx500_ai libcamera_imx283 libcamera_imx462 libcamera_imx327 libcamera_ov5647 libcamera_imx219 libcamera_imx296_gs libcamera_imx290 libcamera_imx298 libcamera_64mp_hawkeye libcamera_64mp_owlsight; do
+=======
+        select libcamera_interface in libcamera_imx477 libcamera_imx378 libcamera_imx708 libcamera_imx519 libcamera_imx500_ai libcamera_imx283 libcamera_imx462 libcamera_imx327 libcamera_ov5647 libcamera_imx219 libcamera_imx296_gs libcamera_imx290 libcamera_imx298 libcamera_64mp_hawkeye libcamera_64mp_owlsight; do
+>>>>>>> upstream/main
             if [ -n "$libcamera_interface" ]; then
                 # overwrite variable
                 CAMERA_INTERFACE="$libcamera_interface"
@@ -341,26 +345,10 @@ if [[ "$DISTRO_ID" == "raspbian" && "$DISTRO_VERSION_ID" == "12" ]]; then
 
     PYTHON_BIN=python3
 
-    if [ "$CPU_ARCH" == "armv7l" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "armv6l" ]; then
+    if [ "$CPU_ARCH" == "armv6l" ]; then
         VIRTUALENV_REQ=requirements/requirements_latest_armv6l.txt
         VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "i686" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "aarch64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "x86_64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
+        VIRTUALENV_REQ_POST=requirements/requirements_latest_post.txt
     else
         VIRTUALENV_REQ=requirements/requirements_latest.txt
         VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
@@ -404,7 +392,7 @@ if [[ "$DISTRO_ID" == "raspbian" && "$DISTRO_VERSION_ID" == "12" ]]; then
         apache2 \
         swig \
         libatlas-base-dev \
-        libilmbase-dev \
+        libimath-dev \
         libopenexr-dev \
         libgtk-3-0 \
         libssl-dev \
@@ -500,26 +488,10 @@ elif [[ "$DISTRO_ID" == "debian" && "$DISTRO_VERSION_ID" == "12" ]]; then
 
     PYTHON_BIN=python3
 
-    if [ "$CPU_ARCH" == "armv7l" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "armv6l" ]; then
+    if [ "$CPU_ARCH" == "armv6l" ]; then
         VIRTUALENV_REQ=requirements/requirements_latest_armv6l.txt
         VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "i686" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "aarch64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "x86_64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
+        VIRTUALENV_REQ_POST=requirements/requirements_latest_post.txt
     else
         VIRTUALENV_REQ=requirements/requirements_latest.txt
         VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
@@ -563,7 +535,7 @@ elif [[ "$DISTRO_ID" == "debian" && "$DISTRO_VERSION_ID" == "12" ]]; then
         apache2 \
         swig \
         libatlas-base-dev \
-        libilmbase-dev \
+        libimath-dev \
         libopenexr-dev \
         libgtk-3-0 \
         libssl-dev \
@@ -659,26 +631,10 @@ elif [[ "$DISTRO_ID" == "raspbian" && "$DISTRO_VERSION_ID" == "11" ]]; then
 
     PYTHON_BIN=python3
 
-    if [ "$CPU_ARCH" == "armv7l" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "armv6l" ]; then
+    if [ "$CPU_ARCH" == "armv6l" ]; then
         VIRTUALENV_REQ=requirements/requirements_latest_armv6l.txt
         VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "i686" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "aarch64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "x86_64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
+        VIRTUALENV_REQ_POST=requirements/requirements_latest_post.txt
     else
         VIRTUALENV_REQ=requirements/requirements_latest.txt
         VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
@@ -818,26 +774,10 @@ elif [[ "$DISTRO_ID" == "debian" && "$DISTRO_VERSION_ID" == "11" ]]; then
 
     PYTHON_BIN=python3
 
-    if [ "$CPU_ARCH" == "armv7l" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "armv6l" ]; then
+    if [ "$CPU_ARCH" == "armv6l" ]; then
         VIRTUALENV_REQ=requirements/requirements_latest_armv6l.txt
         VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "i686" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "aarch64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "x86_64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
+        VIRTUALENV_REQ_POST=requirements/requirements_latest_post.txt
     else
         VIRTUALENV_REQ=requirements/requirements_latest.txt
         VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
@@ -1253,26 +1193,10 @@ elif [[ "$DISTRO_ID" == "ubuntu" && "$DISTRO_VERSION_ID" == "24.04" ]]; then
     PYTHON_BIN=python3.11
 
 
-    if [ "$CPU_ARCH" == "armv7l" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "armv6l" ]; then
+    if [ "$CPU_ARCH" == "armv6l" ]; then
         VIRTUALENV_REQ=requirements/requirements_latest_armv6l.txt
         VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "i686" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "aarch64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "x86_64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
+        VIRTUALENV_REQ_POST=requirements/requirements_latest_post.txt
     else
         VIRTUALENV_REQ=requirements/requirements_latest.txt
         VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
@@ -1427,26 +1351,10 @@ elif [[ "$DISTRO_ID" == "ubuntu" && "$DISTRO_VERSION_ID" == "22.04" ]]; then
 
     PYTHON_BIN=python3.11
 
-    if [ "$CPU_ARCH" == "armv7l" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "armv6l" ]; then
+    if [ "$CPU_ARCH" == "armv6l" ]; then
         VIRTUALENV_REQ=requirements/requirements_latest_armv6l.txt
         VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "i686" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "aarch64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "x86_64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
+        VIRTUALENV_REQ_POST=requirements/requirements_latest_post.txt
     else
         VIRTUALENV_REQ=requirements/requirements_latest.txt
         VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
@@ -1595,27 +1503,9 @@ elif [[ "$DISTRO_ID" == "ubuntu" && "$DISTRO_VERSION_ID" == "20.04" ]]; then
 
     PYTHON_BIN=python3.9
 
-    if [ "$CPU_ARCH" == "armv7l" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [ "$CPU_ARCH" == "i686" ]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "aarch64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    elif [[ "$CPU_ARCH" == "x86_64" && "$CPU_BITS" == "32" ]]; then
-        VIRTUALENV_REQ=requirements/requirements_latest_32.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_latest_32_post.txt
-    else
-        VIRTUALENV_REQ=requirements/requirements_latest.txt
-        VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
-        VIRTUALENV_REQ_POST=requirements/requirements_empty.txt
-    fi
+    VIRTUALENV_REQ=requirements/requirements_latest.txt
+    VIRTUALENV_REQ_OPT=requirements/requirements_optional.txt
+    VIRTUALENV_REQ_POST=requirements/requirements_empty.txt
 
 
     if [[ "$CPU_ARCH" == "x86_64" && "$CPU_BITS" == "64" ]]; then
@@ -2680,18 +2570,10 @@ if [ "$MEM_TOTAL" -lt "768000" ]; then
     [[ -f "$TMP_LIBCAM_TYPE" ]] && rm -f "$TMP_LIBCAM_TYPE"
 fi
 
-# 25% ffmpeg scaling with libcamera when running 1GB of memory
-if [[ "$CAMERA_INTERFACE" == "libcamera_imx477" || "$CAMERA_INTERFACE" == "libcamera_imx378" || "$CAMERA_INTERFACE" == "libcamera_ov5647" || "$CAMERA_INTERFACE" == "libcamera_imx219" || "$CAMERA_INTERFACE" == "libcamera_imx519" || "$CAMERA_INTERFACE" == "libcamera_imx585" || "$CAMERA_INTERFACE" == "libcamera_imx708" || "$CAMERA_INTERFACE" == "libcamera_64mp_hawkeye" || "$CAMERA_INTERFACE" == "libcamera_64mp_owlsight" ]]; then
-    if [ "$MEM_TOTAL" -lt "1536000" ]; then
-        TMP_LIBCAM_FFMPEG=$(mktemp --suffix=.json)
-        jq --arg ffmpeg_vfscale "iw*.25:ih*.25" '.FFMPEG_VFSCALE = $ffmpeg_vfscale' "$TMP_CONFIG_DUMP" > "$TMP_LIBCAM_FFMPEG"
+<<<<<<< HEAD
 
-        cat "$TMP_LIBCAM_FFMPEG" > "$TMP_CONFIG_DUMP"
-
-        [[ -f "$TMP_LIBCAM_FFMPEG" ]] && rm -f "$TMP_LIBCAM_FFMPEG"
-    fi
-fi
-
+=======
+>>>>>>> upstream/main
 
 echo "**** Ensure user is a member of the dialout, video, i2c, spi groups ****"
 # for GPS and serial port access

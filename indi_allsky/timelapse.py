@@ -1,10 +1,10 @@
 import os
 import time
-import tempfile
 from pathlib import Path
 import subprocess
 import logging
 
+from . import timelapse_preprocessor
 from .exceptions import TimelapseException
 
 
@@ -14,20 +14,24 @@ logger = logging.getLogger('indi_allsky')
 
 class TimelapseGenerator(object):
 
-    def __init__(self, config):
+    def __init__(
+        self,
+        config,
+        skip_frames=0,
+        pre_processor_class='standard',
+    ):
         self.config = config
-
-        self.seqfolder = tempfile.TemporaryDirectory(suffix='_timelapse')  # context manager automatically deletes files when finished
-        self.seqfolder_p = Path(self.seqfolder.name)
-
-        #seqfolder = tempfile.mkdtemp(suffix='_timelapse')  # testing
-        #self.seqfolder_p = Path(seqfolder)
+        self.skip_frames = skip_frames
 
         self._codec = 'libx264'
         self._framerate = 25
         self._bitrate = '5000k'
         self._vf_scale = ''
         self._ffmpeg_extra_options = ''
+
+
+        pp_class = getattr(timelapse_preprocessor, pre_processor_class)
+        self._pre_processor = pp_class(self.config)
 
 
     @property
@@ -71,7 +75,12 @@ class TimelapseGenerator(object):
         self._ffmpeg_extra_options = str(new_ffmpeg_extra_options)
 
 
-    def generate(self, video_file, file_list, skip_frames=0):
+    @property
+    def pre_processor(self):
+        return self._pre_processor
+
+
+    def generate(self, video_file, file_list):
         video_file_p = Path(video_file)
 
         # Exclude empty files
@@ -81,33 +90,38 @@ class TimelapseGenerator(object):
         file_list_ordered = sorted(file_list_nonzero, key=lambda p: p.stat().st_mtime)
 
 
-        if skip_frames:
-            logger.warning('Skipping %d frames for timelapse', skip_frames)
-            file_list_ordered = file_list_ordered[skip_frames:]
+        if self.skip_frames:
+            logger.warning('Skipping %d frames for timelapse', self.skip_frames)
+            file_list_ordered = file_list_ordered[self.skip_frames:]
 
-        for i, f in enumerate(file_list_ordered):
-            # the symlink files must start at index 0 or ffmpeg will fail
-            p_symlink = self.seqfolder_p.joinpath('{0:05d}.{1:s}'.format(i, self.config['IMAGE_FILE_TYPE']))
-            p_symlink.symlink_to(f)
+
+        # process images
+        self.pre_processor.main(file_list_ordered)
+        seqfolder = self.pre_processor.seqfolder
 
 
         start = time.time()
 
-        cmd = [
-            'ffmpeg',
+        cmd = ['ffmpeg']
+
+        # add codec options
+        if self.codec in ['h264_qsv']:
+            cmd.extend(['-init_hw_device', 'qsv=hw', '-filter_hw_device', 'hw'])
+
+        cmd.extend([
             '-y',
             '-loglevel', 'level+warning',
             '-r', '{0:0.2f}'.format(self.framerate),
             '-f', 'image2',
             #'-start_number', '0',
             #'-pattern_type', 'glob',
-            '-i', '{0:s}/%05d.{1:s}'.format(str(self.seqfolder_p), self.config['IMAGE_FILE_TYPE']),
+            '-i', '{0:s}/%05d.{1:s}'.format(str(seqfolder), self.config['IMAGE_FILE_TYPE']),
             '-vcodec', '{0:s}'.format(self.codec),
             '-b:v', '{0:s}'.format(self.bitrate),
             #'-filter:v', 'setpts=50*PTS',
             '-pix_fmt', 'yuv420p',
             '-movflags', '+faststart',
-        ]
+        ])
 
 
         # add scaling option if defined

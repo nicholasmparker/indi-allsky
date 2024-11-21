@@ -107,6 +107,7 @@ class ImageWorker(Process):
             'moon_alt'      : 0.0,
             'moon_phase'    : 0.0,
             'sun_moon_sep'  : 90.0,
+            'moon_cycle'    : 0.0,
             'sidereal_time' : 'unset',
             'moon_up'       : 'unset',
             'mercury_alt'   : 0.0,
@@ -609,22 +610,8 @@ class ImageWorker(Process):
         self.image_processor.apply_image_circle_mask()
 
 
-        self.image_processor.apply_logo_overlay()
-
-
-        if self.config['IMAGE_SCALE'] and self.config['IMAGE_SCALE'] != 100:
-            self.image_processor.scale_image()
-
-
-        # blur
-        #self.image_processor.median_blur()
-
-        # denoise
-        #self.image_processor.fastDenoise()
-
-
         if self.config.get('FISH2PANO', {}).get('ENABLE'):
-            if not self.image_count % self.config.get('FISH2PANO', {}).get('MODULUS', 4):
+            if not self.image_count % self.config.get('FISH2PANO', {}).get('MODULUS', 2):
                 pano_data = self.image_processor.fish2pano()
 
 
@@ -638,6 +625,14 @@ class ImageWorker(Process):
                 self.write_panorama_img(pano_data, i_ref, camera, jpeg_exif=jpeg_exif)
 
 
+        self.image_processor.apply_logo_overlay()
+
+
+        if self.config['IMAGE_SCALE'] and self.config['IMAGE_SCALE'] != 100:
+            self.image_processor.scale_image()
+
+
+        self.image_processor.moon_overlay()
 
         self.image_processor.orb_image()
 
@@ -769,6 +764,7 @@ class ImageWorker(Process):
                 'sunalt'   : round(self.astrometric_data['sun_alt'], 1),
                 'moonalt'  : round(self.astrometric_data['moon_alt'], 1),
                 'moonphase': round(self.astrometric_data['moon_phase'], 1),
+                'mooncycle': round(self.astrometric_data['moon_cycle'], 1),
                 'moonmode' : bool(self.moonmode_v.value),
                 'night'    : bool(self.night_v.value),
                 'sqm'      : round(i_ref['sqm_value'], 1),
