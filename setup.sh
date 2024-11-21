@@ -2570,7 +2570,7 @@ if [ "$MEM_TOTAL" -lt "768000" ]; then
     [[ -f "$TMP_LIBCAM_TYPE" ]] && rm -f "$TMP_LIBCAM_TYPE"
 fi
 
-<<<<<<< HEAD
+>>>>>>> upstream/main
 
 =======
 >>>>>>> upstream/main
