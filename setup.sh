@@ -300,11 +300,7 @@ while [ -z "${CAMERA_INTERFACE:-}" ]; do
 
         echo
         PS3="Select a libcamera interface: "
-        select libcamera_interface in libcamera_imx477 libcamera_imx378 libcamera_imx708 libcamera_imx519 libcamera_imx500_ai libcamera_imx283 libcamera_imx462 libcamera_imx327 libcamera_ov5647 libcamera_imx219 libcamera_imx296_gs libcamera_imx290 libcamera_imx298 libcamera_64mp_hawkeye libcamera_64mp_owlsight; do
->>>>>>> upstream/main
-=======
-        select libcamera_interface in libcamera_imx477 libcamera_imx378 libcamera_imx708 libcamera_imx519 libcamera_imx500_ai libcamera_imx283 libcamera_imx462 libcamera_imx327 libcamera_ov5647 libcamera_imx219 libcamera_imx296_gs libcamera_imx290 libcamera_imx298 libcamera_64mp_hawkeye libcamera_64mp_owlsight; do
->>>>>>> upstream/main
+        select libcamera_interface in libcamera_imx477 libcamera_imx378 libcamera_imx708 libcamera_imx519 libcamera_imx585 libcamera_imx500_ai libcamera_imx283 libcamera_imx462 libcamera_imx327 libcamera_ov5647 libcamera_imx219 libcamera_imx296_gs libcamera_imx290 libcamera_imx298 libcamera_64mp_hawkeye libcamera_64mp_owlsight; do
             if [ -n "$libcamera_interface" ]; then
                 # overwrite variable
                 CAMERA_INTERFACE="$libcamera_interface"
@@ -2569,11 +2565,6 @@ if [ "$MEM_TOTAL" -lt "768000" ]; then
 
     [[ -f "$TMP_LIBCAM_TYPE" ]] && rm -f "$TMP_LIBCAM_TYPE"
 fi
-
->>>>>>> upstream/main
-
-=======
->>>>>>> upstream/main
 
 echo "**** Ensure user is a member of the dialout, video, i2c, spi groups ****"
 # for GPS and serial port access
