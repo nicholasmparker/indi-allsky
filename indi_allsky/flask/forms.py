@@ -644,6 +644,7 @@ def IMAGE_LABEL_TEMPLATE_validator(form, field):
         'sun_alt'    : 0.0,
         'moon_alt'   : 0.0,
         'moon_phase' : 0.0,
+        'moon_cycle' : 0.0,
         'moon_up'    : 'No',
         'sun_moon_sep' : 0.0,
         'mercury_alt'  : 0.0,
@@ -1587,6 +1588,17 @@ def ORB_PROPERTIES__AZ_OFFSET_validator(form, field):
 
     if field.data > 180:
         raise ValidationError('Azimuth Offset must be less than 180')
+
+
+def IMAGE_BORDER_SIDE_validator(form, field):
+    if not isinstance(field.data, int):
+        raise ValidationError('Please enter valid number')
+
+    if field.data < 0:
+        raise ValidationError('Border must be 0 or greater')
+
+    if field.data > 1000:
+        raise ValidationError('Border must be less than 1000')
 
 
 def UPLOAD_WORKERS_validator(form, field):
@@ -2679,6 +2691,7 @@ class IndiAllskyConfigForm(FlaskForm):
         ('libcamera_imx519', 'libcamera IMX519'),
         ('libcamera_imx462', 'libcamera IMX462'),
         ('libcamera_imx327', 'libcamera IMX327'),
+        ('libcamera_imx678', 'libcamera IMX678 Darksee'),
         ('libcamera_imx500_ai', 'libcamera IMX500 AI'),
         ('libcamera_imx283', 'libcamera IMX283 Klarity/OneInchEye'),
         ('libcamera_imx296_gs', 'libcamera IMX296 GS'),
@@ -3326,6 +3339,8 @@ class IndiAllskyConfigForm(FlaskForm):
     MOON_OVERLAY__Y                  = IntegerField('Y', validators=[MOON_OVERLAY__Y_validator])
     MOON_OVERLAY__SCALE              = FloatField('Overlay Scale', validators=[DataRequired(), MOON_OVERLAY__SCALE_validator])
     MOON_OVERLAY__DARK_SIDE_SCALE    = FloatField('Dark Side Brightness', validators=[MOON_OVERLAY__DARK_SIDE_SCALE_validator])
+    MOON_OVERLAY__FLIP_V             = BooleanField('Flip Vertically')
+    MOON_OVERLAY__FLIP_H             = BooleanField('Flip Horizontally')
     IMAGE_EXPORT_RAW                 = SelectField('Export RAW image type', choices=IMAGE_EXPORT_RAW_choices, validators=[IMAGE_EXPORT_RAW_validator])
     IMAGE_EXPORT_FOLDER              = StringField('Export RAW folder', validators=[DataRequired(), IMAGE_EXPORT_FOLDER_validator])
     IMAGE_EXPORT_FLIP_V              = BooleanField('Flip RAW Vertically')
@@ -3385,6 +3400,11 @@ class IndiAllskyConfigForm(FlaskForm):
     ORB_PROPERTIES__MOON_COLOR       = StringField('Moon Orb Color (r,g,b)', validators=[DataRequired(), RGB_COLOR_validator])
     ORB_PROPERTIES__AZ_OFFSET        = FloatField('Azimuth Offset', validators=[ORB_PROPERTIES__AZ_OFFSET_validator])
     ORB_PROPERTIES__RETROGRADE       = BooleanField('Reverse Orb Motion')
+    IMAGE_BORDER__TOP                = IntegerField('Image Border Top', validators=[IMAGE_BORDER_SIDE_validator])
+    IMAGE_BORDER__LEFT               = IntegerField('Image Border Left', validators=[IMAGE_BORDER_SIDE_validator])
+    IMAGE_BORDER__RIGHT              = IntegerField('Image Border Right', validators=[IMAGE_BORDER_SIDE_validator])
+    IMAGE_BORDER__BOTTOM             = IntegerField('Image Border Bottom', validators=[IMAGE_BORDER_SIDE_validator])
+    IMAGE_BORDER__COLOR              = StringField('Border Color (r,g,b)', validators=[DataRequired(), RGB_COLOR_validator])
     UPLOAD_WORKERS                   = IntegerField('Upload Workers', validators=[DataRequired(), UPLOAD_WORKERS_validator])
     FILETRANSFER__CLASSNAME          = SelectField('Protocol', choices=FILETRANSFER__CLASSNAME_choices, validators=[DataRequired(), FILETRANSFER__CLASSNAME_validator])
     FILETRANSFER__HOST               = StringField('Host', validators=[FILETRANSFER__HOST_validator])
@@ -3728,6 +3748,18 @@ class IndiAllskyConfigForm(FlaskForm):
         mod_image_crop_y = (self.IMAGE_CROP_ROI_Y2.data - self.IMAGE_CROP_ROI_Y1.data) % 2
         if mod_image_crop_y:
             self.IMAGE_CROP_ROI_Y2.errors.append('Y coordinates must be divisible by 2')
+            result = False
+
+
+        # border
+        if (self.IMAGE_BORDER__TOP.data + self.IMAGE_BORDER__BOTTOM.data) % 2:
+            self.IMAGE_BORDER__TOP.errors.append('Sum of top and bottom border must be divisible by 2')
+            self.IMAGE_BORDER__BOTTOM.errors.append('Sum of top and bottom border must be divisible by 2')
+            result = False
+
+        if (self.IMAGE_BORDER__LEFT.data + self.IMAGE_BORDER__RIGHT.data) % 2:
+            self.IMAGE_BORDER__LEFT.errors.append('Sum of left and right border must be divisible by 2')
+            self.IMAGE_BORDER__RIGHT.errors.append('Sum of left and right border must be divisible by 2')
             result = False
 
 
@@ -4829,6 +4861,7 @@ class IndiAllskyVideoViewer(FlaskForm):
                 'max_kpindex'       : data.get('max_kpindex', 0.0),
                 'max_ovation_max'   : data.get('max_ovation_max', 0),
                 'max_moonphase'     : data.get('max_moonphase', 0),  # might be null
+                'max_stars'         : int(data.get('max_stars', 0)),
                 'avg_stars'         : int(data.get('avg_stars', 0)),
                 'avg_sqm'           : int(data.get('avg_sqm', 0)),
                 'youtube_uploaded'  : bool(data.get('youtube_id', False)),
@@ -5258,6 +5291,7 @@ class IndiAllskyMiniVideoViewer(FlaskForm):
                 'max_kpindex'       : data.get('max_kpindex', 0.0),
                 'max_ovation_max'   : data.get('max_ovation_max', 0),
                 'max_moonphase'     : data.get('max_moonphase', 0),  # might be null
+                'max_stars'         : int(data.get('max_stars', 0)),
                 'avg_stars'         : int(data.get('avg_stars', 0)),
                 'avg_sqm'           : int(data.get('avg_sqm', 0)),
                 'youtube_uploaded'  : bool(data.get('youtube_id', False)),
@@ -5616,7 +5650,7 @@ class IndiAllskySystemInfoForm(FlaskForm):
 
 
 
-class IndiAllskyHistoryForm(FlaskForm):
+class IndiAllskyLoopHistoryForm(FlaskForm):
     HISTORY_SELECT_choices = (
         ('900', '15 Minutes'),
         ('1800', '30 Minutes'),
@@ -5638,6 +5672,22 @@ class IndiAllskyHistoryForm(FlaskForm):
     FRAMEDELAY_SELECT    = SelectField('Speed', choices=FRAMEDELAY_SELECT_choices, default=FRAMEDELAY_SELECT_choices[2][0], validators=[])
     ROCK_CHECKBOX        = BooleanField('Rock', default=False)
 
+
+class IndiAllskyChartHistoryForm(FlaskForm):
+    HISTORY_SELECT_choices = (
+        ('900', '15 Minutes'),
+        ('1800', '30 Minutes'),
+        ('2700', '45 Minutes'),
+        ('3600', '1 Hour'),
+        ('7200', '2 Hours'),
+        ('10800', '3 Hours'),
+        ('14400', '4 Hours'),
+        ('21600', '6 Hours'),
+        ('43200', '12 Hours'),
+        ('86400', '24 Hours'),
+    )
+
+    HISTORY_SELECT       = SelectField('History', choices=HISTORY_SELECT_choices, default=HISTORY_SELECT_choices[0][0], validators=[])
 
 
 class IndiAllskySetDateTimeForm(FlaskForm):
@@ -6007,6 +6057,7 @@ class IndiAllskyCameraSimulatorForm(FlaskForm):
             ('m12_f2.0_1.8mm_1-2.5', 'M12 1.8mm ƒ/2.0 - 180° - 1/2.5" ∅6.9mm'),
         ),
         'Large' : (
+            ('fe185c086ha_f1.8_2.7mm_1', 'Fujinon 2.7mm ƒ/1.8 Fisheye - ∅8.6mm'),
             ('vm2.8ir10mp_f1.6_2.8mm_1-1.8', 'VM2.8IR10MP 2.8mm ƒ/1.6 Fisheye - ∅9.0mm'),
             ('meike_f2.8_3.5mm_4-3', 'Meike 3.5mm ƒ/2.8 Fisheye - 220° - 4/3" ∅12.5mm'),
             ('custom_f7_5.8mm_m42', 'Custom 5.8mm ƒ/7 - 174° - ∅17.3mm'),

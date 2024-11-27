@@ -85,7 +85,8 @@ from .forms import IndiAllskyVideoViewerPreload
 from .forms import IndiAllskyMiniVideoViewer
 from .forms import IndiAllskyMiniVideoViewerPreload
 from .forms import IndiAllskySystemInfoForm
-from .forms import IndiAllskyHistoryForm
+from .forms import IndiAllskyLoopHistoryForm
+from .forms import IndiAllskyChartHistoryForm
 from .forms import IndiAllskySetDateTimeForm
 from .forms import IndiAllskyTimelapseGeneratorForm
 from .forms import IndiAllskyFocusForm
@@ -886,7 +887,7 @@ class ImageLoopView(TemplateView):
         refreshInterval_ms = math.ceil(self.indi_allsky_config.get('CCD_EXPOSURE_MAX', 15.0) * 1000)
         context['refreshInterval'] = refreshInterval_ms
 
-        context['form_history'] = IndiAllskyHistoryForm()
+        context['form_history'] = IndiAllskyLoopHistoryForm()
 
         return context
 
@@ -917,9 +918,9 @@ class JsonImageLoopView(JsonView):
 
         ts_dt = datetime.fromtimestamp(timestamp + 3)  # allow some jitter
 
-        # sanity check
-        if history_seconds > 86400:
-            history_seconds = 86400
+        # sanity check, limit to 4 hours
+        if history_seconds > 14400:
+            history_seconds = 14400
 
         data = {
             'image_list' : self.getLoopImages(camera_id, ts_dt, history_seconds),
@@ -1128,7 +1129,7 @@ class ChartView(TemplateView):
         refreshInterval_ms = math.ceil(self.indi_allsky_config.get('CCD_EXPOSURE_MAX', 15.0) * 1000)
         context['refreshInterval'] = refreshInterval_ms
 
-        context['form_history'] = IndiAllskyHistoryForm()
+        context['form_history'] = IndiAllskyChartHistoryForm()
 
 
         self.update_sensor_slot_labels()
@@ -1513,7 +1514,7 @@ class ConfigView(FormView):
             'LENS_NAME'                      : self.indi_allsky_config.get('LENS_NAME', 'AllSky Lens'),
             'LENS_FOCAL_LENGTH'              : self.indi_allsky_config.get('LENS_FOCAL_LENGTH', 2.5),
             'LENS_FOCAL_RATIO'               : self.indi_allsky_config.get('LENS_FOCAL_RATIO', 2.0),
-            'LENS_IMAGE_CIRCLE'              : self.indi_allsky_config.get('LENS_IMAGE_CIRCLE', 4000),
+            'LENS_IMAGE_CIRCLE'              : self.indi_allsky_config.get('LENS_IMAGE_CIRCLE', 3000),
             'LENS_OFFSET_X'                  : self.indi_allsky_config.get('LENS_OFFSET_X', 0),
             'LENS_OFFSET_Y'                  : self.indi_allsky_config.get('LENS_OFFSET_Y', 0),
             'LENS_ALTITUDE'                  : self.indi_allsky_config.get('LENS_ALTITUDE', 90.0),
@@ -1570,7 +1571,7 @@ class ConfigView(FormView):
             'TIMELAPSE__PRE_PROCESSOR'       : self.indi_allsky_config.get('TIMELAPSE', {}).get('PRE_PROCESSOR', 'standard'),
             'TIMELAPSE__IMAGE_CIRCLE'        : self.indi_allsky_config.get('TIMELAPSE', {}).get('IMAGE_CIRCLE', 2000),
             'TIMELAPSE__KEOGRAM_RATIO'       : self.indi_allsky_config.get('TIMELAPSE', {}).get('KEOGRAM_RATIO', 0.15),
-            'TIMELAPSE__PRE_SCALE'           : self.indi_allsky_config.get('TIMELAPSE', {}).get('PRE_SCALE', 100),
+            'TIMELAPSE__PRE_SCALE'           : self.indi_allsky_config.get('TIMELAPSE', {}).get('PRE_SCALE', 50),
             'CAPTURE_PAUSE'                  : self.indi_allsky_config.get('CAPTURE_PAUSE', False),
             'DAYTIME_CAPTURE'                : self.indi_allsky_config.get('DAYTIME_CAPTURE', True),
             'DAYTIME_CAPTURE_SAVE'           : self.indi_allsky_config.get('DAYTIME_CAPTURE_SAVE', True),
@@ -1630,7 +1631,7 @@ class ConfigView(FormView):
             'IMAGE_FLIP_H'                   : self.indi_allsky_config.get('IMAGE_FLIP_H', True),
             'IMAGE_SCALE'                    : self.indi_allsky_config.get('IMAGE_SCALE', 100),
             'IMAGE_CIRCLE_MASK__ENABLE'      : self.indi_allsky_config.get('IMAGE_CIRCLE_MASK', {}).get('ENABLE', False),
-            'IMAGE_CIRCLE_MASK__DIAMETER'    : self.indi_allsky_config.get('IMAGE_CIRCLE_MASK', {}).get('DIAMETER', 1500),
+            'IMAGE_CIRCLE_MASK__DIAMETER'    : self.indi_allsky_config.get('IMAGE_CIRCLE_MASK', {}).get('DIAMETER', 3000),
             'IMAGE_CIRCLE_MASK__OFFSET_X'    : self.indi_allsky_config.get('IMAGE_CIRCLE_MASK', {}).get('OFFSET_X', 0),
             'IMAGE_CIRCLE_MASK__OFFSET_Y'    : self.indi_allsky_config.get('IMAGE_CIRCLE_MASK', {}).get('OFFSET_Y', 0),
             'IMAGE_CIRCLE_MASK__BLUR'        : self.indi_allsky_config.get('IMAGE_CIRCLE_MASK', {}).get('BLUR', 35),
@@ -1651,11 +1652,13 @@ class ConfigView(FormView):
             'IMAGE_SAVE_FITS'                : self.indi_allsky_config.get('IMAGE_SAVE_FITS', False),
             'NIGHT_GRAYSCALE'                : self.indi_allsky_config.get('NIGHT_GRAYSCALE', False),
             'DAYTIME_GRAYSCALE'              : self.indi_allsky_config.get('DAYTIME_GRAYSCALE', False),
-            'MOON_OVERLAY__ENABLE'           : self.indi_allsky_config.get('MOON_OVERLAY', {}).get('ENABLE', False),
-            'MOON_OVERLAY__X'                : self.indi_allsky_config.get('MOON_OVERLAY', {}).get('X', 200),
-            'MOON_OVERLAY__Y'                : self.indi_allsky_config.get('MOON_OVERLAY', {}).get('Y', 200),
+            'MOON_OVERLAY__ENABLE'           : self.indi_allsky_config.get('MOON_OVERLAY', {}).get('ENABLE', True),
+            'MOON_OVERLAY__X'                : self.indi_allsky_config.get('MOON_OVERLAY', {}).get('X', -500),
+            'MOON_OVERLAY__Y'                : self.indi_allsky_config.get('MOON_OVERLAY', {}).get('Y', -200),
             'MOON_OVERLAY__SCALE'            : self.indi_allsky_config.get('MOON_OVERLAY', {}).get('SCALE', 0.5),
             'MOON_OVERLAY__DARK_SIDE_SCALE'  : self.indi_allsky_config.get('MOON_OVERLAY', {}).get('DARK_SIDE_SCALE', 0.4),
+            'MOON_OVERLAY__FLIP_V'           : self.indi_allsky_config.get('MOON_OVERLAY', {}).get('FLIP_V', False),
+            'MOON_OVERLAY__FLIP_H'           : self.indi_allsky_config.get('MOON_OVERLAY', {}).get('FLIP_H', False),
             'IMAGE_EXPORT_RAW'               : self.indi_allsky_config.get('IMAGE_EXPORT_RAW', ''),
             'IMAGE_EXPORT_FOLDER'            : self.indi_allsky_config.get('IMAGE_EXPORT_FOLDER', '/var/www/html/allsky/images/export'),
             'IMAGE_EXPORT_FLIP_V'            : self.indi_allsky_config.get('IMAGE_EXPORT_FLIP_V', False),
@@ -1699,7 +1702,7 @@ class ConfigView(FormView):
             'CARDINAL_DIRS__CHAR_EAST'       : self.indi_allsky_config.get('CARDINAL_DIRS', {}).get('CHAR_EAST', 'E'),
             'CARDINAL_DIRS__CHAR_WEST'       : self.indi_allsky_config.get('CARDINAL_DIRS', {}).get('CHAR_WEST', 'W'),
             'CARDINAL_DIRS__CHAR_SOUTH'      : self.indi_allsky_config.get('CARDINAL_DIRS', {}).get('CHAR_SOUTH', 'S'),
-            'CARDINAL_DIRS__DIAMETER'        : self.indi_allsky_config.get('CARDINAL_DIRS', {}).get('DIAMETER', 4000),
+            'CARDINAL_DIRS__DIAMETER'        : self.indi_allsky_config.get('CARDINAL_DIRS', {}).get('DIAMETER', 3000),
             'CARDINAL_DIRS__OFFSET_X'        : self.indi_allsky_config.get('CARDINAL_DIRS', {}).get('OFFSET_X', 0),
             'CARDINAL_DIRS__OFFSET_Y'        : self.indi_allsky_config.get('CARDINAL_DIRS', {}).get('OFFSET_Y', 0),
             'CARDINAL_DIRS__OFFSET_TOP'      : self.indi_allsky_config.get('CARDINAL_DIRS', {}).get('OFFSET_TOP', 15),
@@ -1713,6 +1716,10 @@ class ConfigView(FormView):
             'ORB_PROPERTIES__RADIUS'         : self.indi_allsky_config.get('ORB_PROPERTIES', {}).get('RADIUS', 9),
             'ORB_PROPERTIES__AZ_OFFSET'      : self.indi_allsky_config.get('ORB_PROPERTIES', {}).get('AZ_OFFSET', 0.0),
             'ORB_PROPERTIES__RETROGRADE'     : self.indi_allsky_config.get('ORB_PROPERTIES', {}).get('RETROGRADE', False),
+            'IMAGE_BORDER__TOP'              : self.indi_allsky_config.get('IMAGE_BORDER', {}).get('TOP', 0),
+            'IMAGE_BORDER__LEFT'             : self.indi_allsky_config.get('IMAGE_BORDER', {}).get('LEFT', 0),
+            'IMAGE_BORDER__RIGHT'            : self.indi_allsky_config.get('IMAGE_BORDER', {}).get('RIGHT', 0),
+            'IMAGE_BORDER__BOTTOM'           : self.indi_allsky_config.get('IMAGE_BORDER', {}).get('BOTTOM', 0),
             'UPLOAD_WORKERS'                 : self.indi_allsky_config.get('UPLOAD_WORKERS', 2),
             'FILETRANSFER__CLASSNAME'        : self.indi_allsky_config.get('FILETRANSFER', {}).get('CLASSNAME', 'pycurl_sftp'),
             'FILETRANSFER__HOST'             : self.indi_allsky_config.get('FILETRANSFER', {}).get('HOST', ''),
@@ -2030,6 +2037,10 @@ class ConfigView(FormView):
         orb_properties__moon_color_str = [str(x) for x in orb_properties__moon_color]
         form_data['ORB_PROPERTIES__MOON_COLOR'] = ','.join(orb_properties__moon_color_str)
 
+        # Border color
+        image_border__color = self.indi_allsky_config.get('IMAGE_BORDER', {}).get('COLOR', [0, 0, 0])
+        image_border__color_str = [str(x) for x in image_border__color]
+        form_data['IMAGE_BORDER__COLOR'] = ','.join(image_border__color_str)
 
         # Youtube
         youtube_tags = self.indi_allsky_config.get('YOUTUBE', {}).get('TAGS', [])
@@ -2170,8 +2181,42 @@ class AjaxConfigView(BaseView):
 
 
         # sanity check
-        if not self.indi_allsky_config.get('CCD_CONFIG'):
-            self.indi_allsky_config['CCD_CONFIG'] = {}
+        leaf_list = (
+            'CCD_CONFIG',
+            'IMAGE_FILE_COMPRESSION',
+            'IMAGE_CIRCLE_MASK',
+            'FISH2PANO',
+            'TEXT_PROPERTIES',
+            'CARDINAL_DIRS',
+            'IMAGE_STRETCH',
+            'ORB_PROPERTIES',
+            'IMAGE_BORDER',
+            'FILETRANSFER',
+            'S3UPLOAD',
+            'MQTTPUBLISH',
+            'SYNCAPI',
+            'YOUTUBE',
+            'LIBCAMERA',
+            'PYCURL_CAMERA',
+            'ACCUM_CAMERA',
+            'FOCUSER',
+            'DEW_HEATER',
+            'FAN',
+            'GENERIC_GPIO',
+            'TEMP_SENSOR',
+            'THUMBNAILS',
+            'HEALTHCHECK',
+            'CHARTS',
+            'TIMELAPSE',
+            'MOON_OVERLAY',
+            'ADSB',
+            'SATELLITE_TRACK',
+        )
+
+        for leaf in leaf_list:
+            if not self.indi_allsky_config.get(leaf):
+                self.indi_allsky_config[leaf] = {}
+
 
         if not self.indi_allsky_config['CCD_CONFIG'].get('NIGHT'):
             self.indi_allsky_config['CCD_CONFIG']['NIGHT'] = {}
@@ -2182,89 +2227,10 @@ class AjaxConfigView(BaseView):
         if not self.indi_allsky_config['CCD_CONFIG'].get('DAY'):
             self.indi_allsky_config['CCD_CONFIG']['DAY'] = {}
 
-        if not self.indi_allsky_config.get('IMAGE_FILE_COMPRESSION'):
-            self.indi_allsky_config['IMAGE_FILE_COMPRESSION'] = {}
-
-        if not self.indi_allsky_config.get('IMAGE_CIRCLE_MASK'):
-            self.indi_allsky_config['IMAGE_CIRCLE_MASK'] = {}
-
-        if not self.indi_allsky_config.get('FISH2PANO'):
-            self.indi_allsky_config['FISH2PANO'] = {}
-
-        if not self.indi_allsky_config.get('TEXT_PROPERTIES'):
-            self.indi_allsky_config['TEXT_PROPERTIES'] = {}
-
-        if not self.indi_allsky_config.get('CARDINAL_DIRS'):
-            self.indi_allsky_config['CARDINAL_DIRS'] = {}
-
-        if not self.indi_allsky_config.get('IMAGE_STRETCH'):
-            self.indi_allsky_config['IMAGE_STRETCH'] = {}
-
-        if not self.indi_allsky_config.get('ORB_PROPERTIES'):
-            self.indi_allsky_config['ORB_PROPERTIES'] = {}
-
-        if not self.indi_allsky_config.get('FILETRANSFER'):
-            self.indi_allsky_config['FILETRANSFER'] = {}
-
-        if not self.indi_allsky_config.get('S3UPLOAD'):
-            self.indi_allsky_config['S3UPLOAD'] = {}
-
-        if not self.indi_allsky_config.get('MQTTPUBLISH'):
-            self.indi_allsky_config['MQTTPUBLISH'] = {}
-
-        if not self.indi_allsky_config.get('SYNCAPI'):
-            self.indi_allsky_config['SYNCAPI'] = {}
-
-        if not self.indi_allsky_config.get('YOUTUBE'):
-            self.indi_allsky_config['YOUTUBE'] = {}
-
-        if not self.indi_allsky_config.get('LIBCAMERA'):
-            self.indi_allsky_config['LIBCAMERA'] = {}
-
-        if not self.indi_allsky_config.get('PYCURL_CAMERA'):
-            self.indi_allsky_config['PYCURL_CAMERA'] = {}
-
-        if not self.indi_allsky_config.get('ACCUM_CAMERA'):
-            self.indi_allsky_config['ACCUM_CAMERA'] = {}
-
-        if not self.indi_allsky_config.get('FOCUSER'):
-            self.indi_allsky_config['FOCUSER'] = {}
-
-        if not self.indi_allsky_config.get('DEW_HEATER'):
-            self.indi_allsky_config['DEW_HEATER'] = {}
-
-        if not self.indi_allsky_config.get('FAN'):
-            self.indi_allsky_config['FAN'] = {}
-
-        if not self.indi_allsky_config.get('GENERIC_GPIO'):
-            self.indi_allsky_config['GENERIC_GPIO'] = {}
-
-        if not self.indi_allsky_config.get('TEMP_SENSOR'):
-            self.indi_allsky_config['TEMP_SENSOR'] = {}
-
-        if not self.indi_allsky_config.get('THUMBNAILS'):
-            self.indi_allsky_config['THUMBNAILS'] = {}
-
-        if not self.indi_allsky_config.get('HEALTHCHECK'):
-            self.indi_allsky_config['HEALTHCHECK'] = {}
-
-        if not self.indi_allsky_config.get('CHARTS'):
-            self.indi_allsky_config['CHARTS'] = {}
-
-        if not self.indi_allsky_config.get('TIMELAPSE'):
-            self.indi_allsky_config['TIMELAPSE'] = {}
-
-        if not self.indi_allsky_config.get('MOON_OVERLAY'):
-            self.indi_allsky_config['MOON_OVERLAY'] = {}
-
-        if not self.indi_allsky_config.get('ADSB'):
-            self.indi_allsky_config['ADSB'] = {}
-
-        if not self.indi_allsky_config.get('SATELLITE_TRACK'):
-            self.indi_allsky_config['SATELLITE_TRACK'] = {}
 
         if not self.indi_allsky_config.get('FITSHEADERS'):
             self.indi_allsky_config['FITSHEADERS'] = [['', ''], ['', ''], ['', ''], ['', ''], ['', '']]
+
 
         # update data
         self.indi_allsky_config['CAMERA_INTERFACE']                     = str(request.json['CAMERA_INTERFACE'])
@@ -2420,6 +2386,8 @@ class AjaxConfigView(BaseView):
         self.indi_allsky_config['MOON_OVERLAY']['Y']                    = int(request.json['MOON_OVERLAY__Y'])
         self.indi_allsky_config['MOON_OVERLAY']['SCALE']                = float(request.json['MOON_OVERLAY__SCALE'])
         self.indi_allsky_config['MOON_OVERLAY']['DARK_SIDE_SCALE']      = float(request.json['MOON_OVERLAY__DARK_SIDE_SCALE'])
+        self.indi_allsky_config['MOON_OVERLAY']['FLIP_V']               = bool(request.json['MOON_OVERLAY__FLIP_V'])
+        self.indi_allsky_config['MOON_OVERLAY']['FLIP_H']               = bool(request.json['MOON_OVERLAY__FLIP_H'])
         self.indi_allsky_config['IMAGE_EXPORT_RAW']                     = str(request.json['IMAGE_EXPORT_RAW'])
         self.indi_allsky_config['IMAGE_EXPORT_FOLDER']                  = str(request.json['IMAGE_EXPORT_FOLDER'])
         self.indi_allsky_config['IMAGE_EXPORT_FLIP_V']                  = bool(request.json['IMAGE_EXPORT_FLIP_V'])
@@ -2477,6 +2445,10 @@ class AjaxConfigView(BaseView):
         self.indi_allsky_config['ORB_PROPERTIES']['RADIUS']             = int(request.json['ORB_PROPERTIES__RADIUS'])
         self.indi_allsky_config['ORB_PROPERTIES']['AZ_OFFSET']          = float(request.json['ORB_PROPERTIES__AZ_OFFSET'])
         self.indi_allsky_config['ORB_PROPERTIES']['RETROGRADE']         = bool(request.json['ORB_PROPERTIES__RETROGRADE'])
+        self.indi_allsky_config['IMAGE_BORDER']['TOP']                  = int(request.json['IMAGE_BORDER__TOP'])
+        self.indi_allsky_config['IMAGE_BORDER']['LEFT']                 = int(request.json['IMAGE_BORDER__LEFT'])
+        self.indi_allsky_config['IMAGE_BORDER']['RIGHT']                = int(request.json['IMAGE_BORDER__RIGHT'])
+        self.indi_allsky_config['IMAGE_BORDER']['BOTTOM']               = int(request.json['IMAGE_BORDER__BOTTOM'])
         self.indi_allsky_config['UPLOAD_WORKERS']                       = int(request.json['UPLOAD_WORKERS'])
         self.indi_allsky_config['FILETRANSFER']['CLASSNAME']            = str(request.json['FILETRANSFER__CLASSNAME'])
         self.indi_allsky_config['FILETRANSFER']['HOST']                 = str(request.json['FILETRANSFER__HOST'])
@@ -2763,6 +2735,11 @@ class AjaxConfigView(BaseView):
         moon_color_str = str(request.json['ORB_PROPERTIES__MOON_COLOR'])
         moon_r, moon_g, moon_b = moon_color_str.split(',')
         self.indi_allsky_config['ORB_PROPERTIES']['MOON_COLOR'] = [int(moon_r), int(moon_g), int(moon_b)]
+
+        # IMAGE_BORDER COLOR
+        image_border__color_str = str(request.json['IMAGE_BORDER__COLOR'])
+        border_r, border_g, border_b = image_border__color_str.split(',')
+        self.indi_allsky_config['IMAGE_BORDER']['COLOR'] = [int(border_r), int(border_g), int(border_b)]
 
 
         # Youtube tags

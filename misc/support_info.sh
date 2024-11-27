@@ -171,7 +171,9 @@ ps auxwww | grep -i "screen\|tmux\|byobu" | grep -v grep || true
 echo
 
 echo "USB info"
-lsusb
+lsusb || true
+echo
+lsusb -t || true
 echo
 
 echo "USB Permissions"
@@ -187,7 +189,7 @@ v4l2-ctl --list-devices || true
 echo
 
 echo "Module info"
-lsmod
+lsmod || true
 echo
 
 
