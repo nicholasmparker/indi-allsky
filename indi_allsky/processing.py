@@ -554,6 +554,12 @@ class ImageProcessor(object):
             # This gives much better star quality than OpenCV debayering
             # USE RAWPY - DISABLE auto-rotation with user_flip=0
             # Rawpy by default applies EXIF rotation which can flip images randomly
+
+            # DEBUG: Log raw metadata before processing
+            logger.warning('DEBUG RAW METADATA: flip=%d, width=%d, height=%d, raw_width=%d, raw_height=%d',
+                         raw.sizes.flip, raw.sizes.width, raw.sizes.height,
+                         raw.sizes.raw_width, raw.sizes.raw_height)
+
             rgb = raw.postprocess(
                 use_camera_wb=False,        # We handle WB ourselves
                 use_auto_wb=False,
@@ -564,6 +570,7 @@ class ImageProcessor(object):
                 output_color=rawpy.ColorSpace.sRGB,
                 user_flip=0,                # CRITICAL: Disable EXIF auto-rotation!
             )
+            logger.warning('DEBUG POSTPROCESS OUTPUT: shape=%s', str(rgb.shape))
 
             # For FITS: transpose from (H,W,C) to (C,H,W)
             # FITS stores as (NAXIS3, NAXIS2, NAXIS1)
