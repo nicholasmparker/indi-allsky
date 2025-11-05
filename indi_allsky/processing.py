@@ -1410,7 +1410,9 @@ class ImageProcessor(object):
 
 
     def _rotate_90(self, rotate_enum):
+        logger.warning('DEBUG: Applying 90-degree rotation: %s, shape before=%s', str(rotate_enum), str(self.image.shape))
         self.image = cv2.rotate(self.image, rotate_enum)
+        logger.warning('DEBUG: Shape after rotation: %s', str(self.image.shape))
 
 
     def rotate_angle(self):
@@ -1485,7 +1487,10 @@ class ImageProcessor(object):
 
 
     def _flip(self, data, cv2_axis):
-        return cv2.flip(data, cv2_axis)
+        logger.warning('DEBUG: Applying flip with axis=%d, shape before=%s', cv2_axis, str(data.shape))
+        result = cv2.flip(data, cv2_axis)
+        logger.warning('DEBUG: Shape after flip: %s', str(result.shape))
+        return result
 
 
     def flip_v(self):
