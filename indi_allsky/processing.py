@@ -556,9 +556,11 @@ class ImageProcessor(object):
             # Rawpy by default applies EXIF rotation which can flip images randomly
 
             # DEBUG: Log raw metadata before processing
-            logger.warning('DEBUG RAW METADATA: flip=%d, width=%d, height=%d, raw_width=%d, raw_height=%d',
+            logger.warning('DEBUG RAW METADATA: flip=%d, width=%d, height=%d, raw_width=%d, raw_height=%d, '
+                         'raw_pattern=%s, color_desc=%s',
                          raw.sizes.flip, raw.sizes.width, raw.sizes.height,
-                         raw.sizes.raw_width, raw.sizes.raw_height)
+                         raw.sizes.raw_width, raw.sizes.raw_height,
+                         str(raw.raw_pattern), str(raw.color_desc))
 
             rgb = raw.postprocess(
                 use_camera_wb=False,        # We handle WB ourselves
@@ -570,7 +572,8 @@ class ImageProcessor(object):
                 output_color=rawpy.ColorSpace.sRGB,
                 user_flip=0,                # CRITICAL: Disable EXIF auto-rotation!
             )
-            logger.warning('DEBUG POSTPROCESS OUTPUT: shape=%s', str(rgb.shape))
+            logger.warning('DEBUG POSTPROCESS OUTPUT: shape=%s, mean_per_channel=R:%.1f,G:%.1f,B:%.1f',
+                         str(rgb.shape), rgb[:,:,0].mean(), rgb[:,:,1].mean(), rgb[:,:,2].mean())
 
             # For FITS: transpose from (H,W,C) to (C,H,W)
             # FITS stores as (NAXIS3, NAXIS2, NAXIS1)
