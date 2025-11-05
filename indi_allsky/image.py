@@ -393,7 +393,7 @@ class ImageWorker(Process):
         # DEBUGGING: Save a copy of the raw DNG before processing with timestamp
         if filename_p.suffix == '.dng':
             import shutil
-            from datetime import datetime
+            # datetime already imported at top
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             debug_path = Path(f'/tmp/debug_raw_mqtt_{timestamp}.dng')
             try:
