@@ -63,6 +63,12 @@ services:
       - migrations_indi_allsky:/var/lib/indi-allsky
   #  ports:
   #    - "8000:8000"
+    # GPU access for Intel integrated graphics
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+      - render
 
 
   capture.indi.allsky:
@@ -81,6 +87,12 @@ services:
     volumes:
       - images_indi_allsky:/var/www/html/allsky
       #- /run/udev:/run/udev:ro  # enable for libcamera
+    # GPU access for Intel integrated graphics
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+      - render
 
 
   webserver.indi.allsky:
