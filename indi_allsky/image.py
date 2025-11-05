@@ -390,6 +390,18 @@ class ImageWorker(Process):
         self.image_processor.update_astrometric_data(now)
 
 
+        # DEBUGGING: Save a copy of the raw DNG before processing with timestamp
+        if filename_p.suffix == '.dng':
+            import shutil
+            from datetime import datetime
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            debug_path = Path(f'/tmp/debug_raw_mqtt_{timestamp}.dng')
+            try:
+                shutil.copy2(filename_p, debug_path)
+                logger.warning('DEBUG: Saved raw MQTT DNG to %s', debug_path)
+            except Exception as e:
+                logger.error('DEBUG: Failed to save raw DNG: %s', str(e))
+
         try:
             i_ref = self.image_processor.add(filename_p, exposure, gain, exp_date, exp_elapsed, camera)
         except BadImage as e:

@@ -209,7 +209,7 @@ class IndiClientLibCameraMqttGeneric(IndiClientLibCameraGeneric):
 
             # CCM
             if self.config.get('LIBCAMERA', {}).get('CCM_DISABLE'):
-                cmd.extend(['--ccm', '1,1,1,1,1,1,1,1,1'])
+                cmd.extend(['--ccm', '1,0,0,0,1,0,0,0,1'])
 
         else:
             # daytime
@@ -229,7 +229,7 @@ class IndiClientLibCameraMqttGeneric(IndiClientLibCameraGeneric):
 
             # CCM
             if self.config.get('LIBCAMERA', {}).get('CCM_DISABLE_DAY'):
-                cmd.extend(['--ccm', '1,1,1,1,1,1,1,1,1'])
+                cmd.extend(['--ccm', '1,0,0,0,1,0,0,0,1'])
 
 
         # add --mode flags for binning

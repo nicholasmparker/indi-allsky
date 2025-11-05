@@ -63,10 +63,10 @@ class ImageProcessor(object):
     registration_exposure_thresh = 5.0
 
     __cfa_bgr_map = {
-        'RGGB' : cv2.COLOR_BAYER_BG2BGR,
-        'GRBG' : cv2.COLOR_BAYER_GB2BGR,
-        'BGGR' : cv2.COLOR_BAYER_RG2BGR,
-        'GBRG' : cv2.COLOR_BAYER_GR2BGR,  # untested
+        'RGGB' : cv2.COLOR_BAYER_BG2BGR_EA,  # Edge-Aware for better quality
+        'GRBG' : cv2.COLOR_BAYER_GB2BGR_EA,  # Edge-Aware for better quality
+        'BGGR' : cv2.COLOR_BAYER_RG2BGR_EA,  # Edge-Aware for better quality
+        'GBRG' : cv2.COLOR_BAYER_GR2BGR_EA,  # Edge-Aware for better quality (untested)
     }
 
     __cfa_gray_map = {
@@ -550,7 +550,26 @@ class ImageProcessor(object):
             except rawpy._rawpy.LibRawIOError as e:
                 raise BadImage(str(e)) from e
 
-            data = raw.raw_image
+            # USE RAWPY HIGH-QUALITY POSTPROCESSING instead of extracting raw Bayer
+            # This gives much better star quality than OpenCV debayering
+            # USE RAWPY - DISABLE auto-rotation with user_flip=0
+            # Rawpy by default applies EXIF rotation which can flip images randomly
+            rgb = raw.postprocess(
+                use_camera_wb=False,        # We handle WB ourselves
+                use_auto_wb=False,
+                output_bps=16,              # 16-bit output
+                no_auto_bright=True,        # Don't auto-brighten
+                gamma=(1, 1),               # Linear gamma (we apply our own stretching)
+                demosaic_algorithm=rawpy.DemosaicAlgorithm.AHD,  # High quality
+                output_color=rawpy.ColorSpace.sRGB,
+                user_flip=0,                # CRITICAL: Disable EXIF auto-rotation!
+            )
+
+            # For FITS: transpose from (H,W,C) to (C,H,W)
+            # FITS stores as (NAXIS3, NAXIS2, NAXIS1)
+            # Leave in RGB format - the debayer function will convert to BGR later
+            data = numpy.transpose(rgb, (2, 0, 1)).astype(numpy.uint16)
+            logger.info('DEBUG: data shape before FITS write: %s', str(data.shape))
 
             ### testing
             #data = numpy.left_shift(data, 4)  # upscale to full 16-bits
@@ -585,17 +604,10 @@ class ImageProcessor(object):
             if camera.owner:
                 hdulist[0].header['ORIGIN'] = camera.owner
 
-            if self.config.get('CFA_PATTERN'):
-                hdulist[0].header['BAYERPAT'] = self.config['CFA_PATTERN']
-                hdulist[0].header['XBAYROFF'] = 0
-                hdulist[0].header['YBAYROFF'] = 0
-            elif camera.cfa:
-                hdulist[0].header['BAYERPAT'] = constants.CFA_MAP_STR[camera.cfa]
-                hdulist[0].header['XBAYROFF'] = 0
-                hdulist[0].header['YBAYROFF'] = 0
-
+            # Don't set BAYERPAT - we already debayered with rawpy!
+            # This signals to skip the debayer step later
             image_bitpix = hdulist[0].header['BITPIX']
-            image_bayerpat = hdulist[0].header.get('BAYERPAT')
+            image_bayerpat = None  # Already debayered!
             image_xbayroff = 0
             image_ybayroff = 0
             image_roworder = 'na'
@@ -729,6 +741,7 @@ class ImageProcessor(object):
 
     def _debayer(self, i_ref):
         data = i_ref.hdulist[0].data
+        logger.info('DEBUG: data shape after FITS read: %s', str(data.shape))
 
         if i_ref.image_bitpix in (8, 16):
             pass
@@ -763,10 +776,22 @@ class ImageProcessor(object):
 
         if not len(data.shape) == 2:
             # data is already RGB(fits)
-            data = numpy.swapaxes(data, 0, 2)
-            data = numpy.swapaxes(data, 0, 1)
+            logger.info('DEBUG: RGB data shape from FITS: %s', str(data.shape))
+
+            # FITS stores as (C, H, W) = (3, 6944, 9248)
+            # Need to convert to (H, W, C) for OpenCV
+            data = numpy.transpose(data, (1, 2, 0))
+            logger.info('DEBUG: RGB data shape after transpose: %s', str(data.shape))
+
+            # Log channel means BEFORE conversion
+            logger.warning('DEBUG BEFORE RGB2BGR: Ch0=%.1f, Ch1=%.1f, Ch2=%.1f',
+                         data[:,:,0].mean(), data[:,:,1].mean(), data[:,:,2].mean())
 
             i_ref.opencv_data = cv2.cvtColor(data, cv2.COLOR_RGB2BGR)
+
+            # Log channel means AFTER conversion
+            logger.warning('DEBUG AFTER RGB2BGR: Ch0=%.1f, Ch1=%.1f, Ch2=%.1f',
+                         i_ref.opencv_data[:,:,0].mean(), i_ref.opencv_data[:,:,1].mean(), i_ref.opencv_data[:,:,2].mean())
             return
 
 
