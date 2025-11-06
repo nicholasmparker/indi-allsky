@@ -150,18 +150,20 @@ class TimelapseGenerator(object):
                 '-pix_fmt', 'yuv420p',
             ])
 
-        cmd.extend([
-            '-movflags', '+faststart',
-        ])
+        # movflags causes auto-scaler issues with VAAPI
+        if self.codec not in ['h264_vaapi']:
+            cmd.extend([
+                '-movflags', '+faststart',
+            ])
 
 
         # add scaling option if defined
         if self.vf_scale:
             logger.warning('Setting FFMPEG scaling option: %s', self.vf_scale)
             if self.codec in ['h264_vaapi']:
-                # VAAPI needs: CPU scale -> format nv12 -> hwupload to GPU -> format vaapi
+                # VAAPI needs: CPU scale -> format nv12 -> hwupload to GPU
                 cmd.append('-vf')
-                cmd.append('scale={0:s},format=nv12,hwupload,format=vaapi'.format(self.vf_scale))
+                cmd.append('scale={0:s},format=nv12,hwupload'.format(self.vf_scale))
             else:
                 cmd.append('-vf')
                 cmd.append('scale={0:s}'.format(self.vf_scale))
