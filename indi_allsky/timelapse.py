@@ -159,9 +159,9 @@ class TimelapseGenerator(object):
         if self.vf_scale:
             logger.warning('Setting FFMPEG scaling option: %s', self.vf_scale)
             if self.codec in ['h264_vaapi']:
-                # VAAPI needs: CPU scale -> format nv12 -> hwupload to GPU
+                # VAAPI needs: CPU scale -> format nv12 -> hwupload to GPU -> format vaapi
                 cmd.append('-vf')
-                cmd.append('scale={0:s},format=nv12,hwupload'.format(self.vf_scale))
+                cmd.append('scale={0:s},format=nv12,hwupload,format=vaapi'.format(self.vf_scale))
             else:
                 cmd.append('-vf')
                 cmd.append('scale={0:s}'.format(self.vf_scale))
