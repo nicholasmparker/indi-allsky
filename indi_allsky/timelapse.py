@@ -121,9 +121,8 @@ class TimelapseGenerator(object):
             #cmd.extend([])  # nothing to add currently
             pass
         elif self.codec in ['h264_vaapi']:
-            ### AMD VAAPI
-            #cmd.extend([])  # nothing to add currently
-            pass
+            ### VAAPI (Intel/AMD)
+            cmd.extend(['-vaapi_device', '/dev/dri/renderD128'])
 
 
         cmd.extend([

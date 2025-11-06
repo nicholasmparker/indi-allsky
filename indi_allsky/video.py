@@ -253,7 +253,7 @@ class VideoWorker(Process):
             timeofday = 'day'
 
 
-        if self.config['FFMPEG_CODEC'] in ['libx264', 'libx265', 'h264_qsv', 'h264_omx', 'h264_v4l2m2m', 'hevc_v4l2m2m']:
+        if self.config['FFMPEG_CODEC'] in ['libx264', 'libx265', 'h264_qsv', 'h264_vaapi', 'h264_nvenc', 'h264_omx', 'h264_v4l2m2m', 'hevc_v4l2m2m']:
             video_format = 'mp4'
         elif self.config['FFMPEG_CODEC'] in ['libvpx']:
             video_format = 'webm'
@@ -539,7 +539,7 @@ class VideoWorker(Process):
             timeofday = 'day'
 
 
-        if self.config['FFMPEG_CODEC'] in ['libx264', 'libx265', 'h264_qsv', 'h264_omx', 'h264_v4l2m2m', 'hevc_v4l2m2m']:
+        if self.config['FFMPEG_CODEC'] in ['libx264', 'libx265', 'h264_qsv', 'h264_vaapi', 'h264_nvenc', 'h264_omx', 'h264_v4l2m2m', 'hevc_v4l2m2m']:
             video_format = 'mp4'
         elif self.config['FFMPEG_CODEC'] in ['libvpx']:
             video_format = 'webm'
@@ -812,7 +812,7 @@ class VideoWorker(Process):
             timeofday = 'day'
 
 
-        if self.config['FFMPEG_CODEC'] in ['libx264', 'libx265', 'h264_qsv', 'h264_omx', 'h264_v4l2m2m', 'hevc_v4l2m2m']:
+        if self.config['FFMPEG_CODEC'] in ['libx264', 'libx265', 'h264_qsv', 'h264_vaapi', 'h264_nvenc', 'h264_omx', 'h264_v4l2m2m', 'hevc_v4l2m2m']:
             video_format = 'mp4'
         elif self.config['FFMPEG_CODEC'] in ['libvpx']:
             video_format = 'webm'
@@ -1060,7 +1060,7 @@ class VideoWorker(Process):
             timeofday = 'day'
 
 
-        if self.config['FFMPEG_CODEC'] in ['libx264', 'libx265', 'h264_qsv', 'h264_omx', 'h264_v4l2m2m', 'hevc_v4l2m2m']:
+        if self.config['FFMPEG_CODEC'] in ['libx264', 'libx265', 'h264_qsv', 'h264_vaapi', 'h264_nvenc', 'h264_omx', 'h264_v4l2m2m', 'hevc_v4l2m2m']:
             video_format = 'mp4'
         elif self.config['FFMPEG_CODEC'] in ['libvpx']:
             video_format = 'webm'
