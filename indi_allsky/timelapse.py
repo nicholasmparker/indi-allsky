@@ -142,9 +142,14 @@ class TimelapseGenerator(object):
         else:
             cmd.extend(['-b:v', '{0:s}'.format(self.bitrate)])
 
+        # VAAPI doesn't use -pix_fmt, it's handled by hardware
+        if self.codec not in ['h264_vaapi']:
+            cmd.extend([
+                #'-filter:v', 'setpts=50*PTS',
+                '-pix_fmt', 'yuv420p',
+            ])
+
         cmd.extend([
-            #'-filter:v', 'setpts=50*PTS',
-            '-pix_fmt', 'yuv420p',
             '-movflags', '+faststart',
         ])
 
