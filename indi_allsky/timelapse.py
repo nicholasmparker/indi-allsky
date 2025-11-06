@@ -167,11 +167,11 @@ class TimelapseGenerator(object):
                 cmd.append('-vf')
                 cmd.append('scale={0:s},format=nv12,hwupload'.format(vf_scale_aligned))
             elif self.codec in ['h264_qsv']:
-                # QSV needs: CPU scale -> format nv12 -> hwupload to GPU
+                # QSV needs: format nv12 -> hwupload -> scale on GPU
                 # Use -16 for 16-pixel alignment required by hardware encoder
                 vf_scale_aligned = self.vf_scale.replace('-2:', '-16:')
                 cmd.append('-vf')
-                cmd.append('scale={0:s},format=nv12,hwupload=extra_hw_frames=64'.format(vf_scale_aligned))
+                cmd.append('format=nv12,hwupload=extra_hw_frames=64,scale_qsv={0:s}'.format(vf_scale_aligned))
             else:
                 cmd.append('-vf')
                 cmd.append('scale={0:s}'.format(self.vf_scale))
