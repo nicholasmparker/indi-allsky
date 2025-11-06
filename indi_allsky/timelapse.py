@@ -122,7 +122,8 @@ class TimelapseGenerator(object):
             pass
         elif self.codec in ['h264_vaapi']:
             ### VAAPI (Intel/AMD)
-            cmd.extend(['-vaapi_device', '/dev/dri/renderD128'])
+            #cmd.extend([])  # nothing to add currently
+            pass
 
 
         cmd.extend([
@@ -157,17 +158,12 @@ class TimelapseGenerator(object):
         # add scaling option if defined
         if self.vf_scale:
             logger.warning('Setting FFMPEG scaling option: %s', self.vf_scale)
-            if self.codec in ['h264_vaapi']:
-                # VAAPI needs format conversion and hardware upload
-                height = self.vf_scale.split(':')[1] if ':' in self.vf_scale else self.vf_scale
-                cmd.extend(['-vf', 'format=nv12,hwupload,scale_vaapi=w=-2:h={0:s}'.format(height)])
-            else:
-                cmd.append('-vf')
-                cmd.append('scale={0:s}'.format(self.vf_scale))
+            cmd.append('-vf')
+            cmd.append('scale={0:s}'.format(self.vf_scale))
 
 
-        # add extra options (skip for VAAPI to avoid format conversion issues)
-        if self.ffmpeg_extra_options and self.codec not in ['h264_vaapi']:
+        # add extra options
+        if self.ffmpeg_extra_options:
             cmd.extend(self.ffmpeg_extra_options.split(' '))
 
 
