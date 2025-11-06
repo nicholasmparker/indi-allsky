@@ -143,15 +143,15 @@ class TimelapseGenerator(object):
         else:
             cmd.extend(['-b:v', '{0:s}'.format(self.bitrate)])
 
-        # VAAPI doesn't use pix_fmt (incompatible with vaapi format)
-        if self.codec not in ['h264_vaapi']:
+        # Hardware encoders don't use pix_fmt (incompatible with hardware surfaces)
+        if self.codec not in ['h264_vaapi', 'h264_qsv']:
             cmd.extend([
                 #'-filter:v', 'setpts=50*PTS',
                 '-pix_fmt', 'yuv420p',
             ])
 
-        # movflags causes auto-scaler issues with VAAPI
-        if self.codec not in ['h264_vaapi']:
+        # movflags causes auto-scaler issues with hardware encoders
+        if self.codec not in ['h264_vaapi', 'h264_qsv']:
             cmd.extend([
                 '-movflags', '+faststart',
             ])
@@ -166,13 +166,19 @@ class TimelapseGenerator(object):
                 vf_scale_aligned = self.vf_scale.replace('-2:', '-16:')
                 cmd.append('-vf')
                 cmd.append('scale={0:s},format=nv12,hwupload'.format(vf_scale_aligned))
+            elif self.codec in ['h264_qsv']:
+                # QSV needs: CPU scale -> format nv12 -> hwupload to GPU
+                # Use -16 for 16-pixel alignment required by hardware encoder
+                vf_scale_aligned = self.vf_scale.replace('-2:', '-16:')
+                cmd.append('-vf')
+                cmd.append('scale={0:s},format=nv12,hwupload=extra_hw_frames=64'.format(vf_scale_aligned))
             else:
                 cmd.append('-vf')
                 cmd.append('scale={0:s}'.format(self.vf_scale))
 
 
-        # add extra options (skip for VAAPI - causes filter incompatibility)
-        if self.ffmpeg_extra_options and self.codec not in ['h264_vaapi']:
+        # add extra options (skip for hardware encoders - causes filter incompatibility)
+        if self.ffmpeg_extra_options and self.codec not in ['h264_vaapi', 'h264_qsv']:
             cmd.extend(self.ffmpeg_extra_options.split(' '))
 
 
