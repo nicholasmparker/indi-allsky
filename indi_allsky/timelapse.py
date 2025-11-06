@@ -160,7 +160,7 @@ class TimelapseGenerator(object):
             if self.codec in ['h264_vaapi']:
                 # VAAPI needs format conversion and hardware upload
                 height = self.vf_scale.split(':')[1] if ':' in self.vf_scale else self.vf_scale
-                cmd.extend(['-vf', 'format=nv12,hwupload,scale_vaapi=w=-2:h={0:s}'.format(height)])
+                cmd.extend(['-vf', 'format=nv12,hwupload,scale_vaapi=w=-2:h={0:s}:format=nv12'.format(height)])
             else:
                 cmd.append('-vf')
                 cmd.append('scale={0:s}'.format(self.vf_scale))
