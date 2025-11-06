@@ -167,8 +167,8 @@ class TimelapseGenerator(object):
                 cmd.append('scale={0:s}'.format(self.vf_scale))
 
 
-        # add extra options
-        if self.ffmpeg_extra_options:
+        # add extra options (skip for VAAPI - causes filter incompatibility)
+        if self.ffmpeg_extra_options and self.codec not in ['h264_vaapi']:
             cmd.extend(self.ffmpeg_extra_options.split(' '))
 
 
