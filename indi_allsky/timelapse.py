@@ -134,7 +134,15 @@ class TimelapseGenerator(object):
             #'-pattern_type', 'glob',
             '-i', '{0:s}/%05d.{1:s}'.format(str(seqfolder), self.config['IMAGE_FILE_TYPE']),
             '-c:v', '{0:s}'.format(self.codec),
-            '-b:v', '{0:s}'.format(self.bitrate),
+        ])
+
+        # VAAPI uses CQP (quality mode), not bitrate
+        if self.codec in ['h264_vaapi']:
+            cmd.extend(['-qp', '20'])  # Quality: lower = better (18-28 typical range)
+        else:
+            cmd.extend(['-b:v', '{0:s}'.format(self.bitrate)])
+
+        cmd.extend([
             #'-filter:v', 'setpts=50*PTS',
             '-pix_fmt', 'yuv420p',
             '-movflags', '+faststart',
