@@ -51,6 +51,26 @@ class PreProcessorWrapKeogram(PreProcessorBase):
 
 
     def main(self, file_list):
+        # Calculate target dimensions from first image to ensure all frames have same size
+        target_width = None
+        target_height = None
+
+        if self.pre_scale < 100 and len(file_list) > 0:
+            # Read first image to determine target dimensions
+            first_img = self._read_image(file_list[0])
+            if first_img is not None:
+                image_height, image_width = first_img.shape[:2]
+                target_height = int(image_height * (self.pre_scale / 100))
+                target_width = int(image_width * (self.pre_scale / 100))
+
+                # Ensure dimensions are even (required for video encoding)
+                if target_height % 2 != 0:
+                    target_height -= 1
+                if target_width % 2 != 0:
+                    target_width -= 1
+
+                logger.info('Target dimensions for all frames: %dx%d', target_width, target_height)
+
         # scale settings
         scaled_image_circle = int(self.image_circle * (self.pre_scale / 100))
         scaled_x_offset = int(self.x_offset * (self.pre_scale / 100))
@@ -107,6 +127,8 @@ class PreProcessorWrapKeogram(PreProcessorBase):
                 scaled_image_circle,
                 scaled_x_offset,
                 scaled_y_offset,
+                target_width,
+                target_height,
             )
 
 
@@ -114,7 +136,32 @@ class PreProcessorWrapKeogram(PreProcessorBase):
         logger.info('Pre-processing in %0.4f s (%0.2f images/s)', process_elapsed_s, len(file_list) / process_elapsed_s)
 
 
-    def wrap(self, i, f, seqfolder_p, image_circle, x_offset, y_offset):
+    def _read_image(self, f):
+        """Read an image file and return as numpy array"""
+        if f.suffix in ('.jpg', '.jpeg'):
+            try:
+                with io.open(str(f), 'rb') as f_img:
+                    return simplejpeg.decode_jpeg(f_img.read(), colorspace='BGR')
+            except ValueError as e:
+                logger.error('Unable to read - %s: %s', str(e), f)
+                return None
+        elif f.suffix in ('.png',):
+            image = cv2.imread(str(f), cv2.IMREAD_COLOR)
+            if isinstance(image, type(None)):
+                logger.error('Unable to read %s', f)
+                return None
+            return image
+        else:
+            # Pillow supports remaining image types
+            try:
+                with Image.open(str(f)) as img_pil:
+                    return cv2.cvtColor(numpy.array(img_pil), cv2.COLOR_RGB2BGR)
+            except PIL.UnidentifiedImageError:
+                logger.error('Unable to read %s', f)
+                return None
+
+
+    def wrap(self, i, f, seqfolder_p, image_circle, x_offset, y_offset, target_width, target_height):
         #wrap_start = time.time()
 
         keogram = self._keogram_image.copy()
@@ -166,11 +213,9 @@ class PreProcessorWrapKeogram(PreProcessorBase):
 
 
         ### Pre scale the image so there is less processing work to be done on slower systems like Raspberry Pi
-        if self.pre_scale < 100:
-            image_height, image_width = image.shape[:2]
-            pre_scaled_height = int(image_height * (self.pre_scale / 100))
-            pre_scaled_width = int(image_width * (self.pre_scale / 100))
-            image = cv2.resize(image, (pre_scaled_width, pre_scaled_height), interpolation=cv2.INTER_AREA)
+        if self.pre_scale < 100 and target_width is not None and target_height is not None:
+            # Scale to uniform target dimensions (same for all frames)
+            image = cv2.resize(image, (target_width, target_height), interpolation=cv2.INTER_AREA)
 
 
         image_height, image_width = image.shape[:2]

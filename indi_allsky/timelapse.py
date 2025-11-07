@@ -158,9 +158,11 @@ class TimelapseGenerator(object):
 
 
         # add scaling option if defined
+        # NOTE: For VAAPI/QSV to work with large images (>4096px), use pre-scaling in preprocessor instead
         if self.vf_scale:
             logger.warning('Setting FFMPEG scaling option: %s', self.vf_scale)
             if self.codec in ['h264_vaapi']:
+                logger.warning('VAAPI with vf_scale may fail if images >4096px - use pre-scaling instead')
                 # VAAPI needs: CPU scale -> format nv12 -> hwupload to GPU
                 # Use -16 for 16-pixel alignment required by hardware encoder
                 vf_scale_aligned = self.vf_scale.replace('-2:', '-16:')
@@ -175,6 +177,10 @@ class TimelapseGenerator(object):
             else:
                 cmd.append('-vf')
                 cmd.append('scale={0:s}'.format(self.vf_scale))
+        elif self.codec in ['h264_vaapi', 'h264_qsv']:
+            # Hardware encoders need format conversion even without scaling
+            cmd.append('-vf')
+            cmd.append('format=nv12,hwupload')
 
 
         # add extra options (skip for hardware encoders - causes filter incompatibility)
